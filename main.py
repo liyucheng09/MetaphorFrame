@@ -23,6 +23,7 @@ from modeling import (
 )
 from run_classifier_dataset_utils import processors, output_modes, compute_metrics
 from data_loader import load_train_data, load_train_data_kf, load_test_data
+from pprint import pprint
 
 CONFIG_NAME = "config.json"
 WEIGHTS_NAME = "pytorch_model.bin"
@@ -45,7 +46,7 @@ def main():
         config.update_params(cmd_arg)
 
     args = config
-    print(args.__dict__)
+    pprint(args.__dict__)
 
     # logger
     if "saves" in args.bert_model:
@@ -71,12 +72,12 @@ def main():
                 cmd_arg[arg_name] = arg_value
             config.update_params(cmd_arg)
     else:
-        if not os.path.exists("saves"):
-            os.mkdir("saves")
-        log_dir = make_log_dir(os.path.join("saves", args.bert_model))
+        if not os.path.exists(args.logging_dir):
+            os.mkdir(args.logging_dir)
+        log_dir = make_log_dir(os.path.join(args.logging_dir, args.bert_model))
         logger = Logger(log_dir)
         config.save(log_dir)
-    args.log_dir = log_dir
+        args.logging_dir = log_dir
 
     # set CUDA devices
     device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
