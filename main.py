@@ -32,10 +32,11 @@ ARGS_NAME = "training_args.bin"
 
 def main():
     # read configs
-    config = Config(main_conf_path="./")
 
     # apply system arguments if exist
     argv = sys.argv[1:]
+    config = Config(main_conf_path="/user/HS502/yl02706/MetaphorFrame/")
+    print(argv)
     if len(argv) > 0:
         cmd_arg = OrderedDict()
         argvs = " ".join(sys.argv[1:]).split(" ")
@@ -78,6 +79,8 @@ def main():
         logger = Logger(log_dir)
         config.save(log_dir)
         args.logging_dir = log_dir
+        args.log_dir = log_dir
+
 
     # set CUDA devices
     device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
