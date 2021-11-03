@@ -16,6 +16,7 @@ def load_train_data(args, logger, processor, task_name, label_list, tokenizer, o
     # Prepare data loader
     if task_name == "vua":
         train_examples = processor.get_train_examples(args.data_dir)
+        # train_examples = train_examples[:100]
     elif task_name == "trofi":
         train_examples = processor.get_train_examples(args.data_dir, k)
     else:
@@ -30,7 +31,7 @@ def load_train_data(args, logger, processor, task_name, label_list, tokenizer, o
         train_features = convert_examples_to_features(
             train_examples, label_list, args.max_seq_length, tokenizer, output_mode, args
         )
-    if args.model_type in ["MELBERT_MIP", "MELBERT"]:
+    if args.model_type in ["MELBERT_MIP", "MELBERT", "FrameMelbert"]:
         train_features = convert_examples_to_two_features(
             train_examples, label_list, args.max_seq_length, tokenizer, output_mode, args
         )
@@ -42,7 +43,7 @@ def load_train_data(args, logger, processor, task_name, label_list, tokenizer, o
     all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.long)
 
     # add additional features for MELBERT_MIP and MELBERT
-    if args.model_type in ["MELBERT_MIP", "MELBERT"]:
+    if args.model_type in ["MELBERT_MIP", "MELBERT", "FrameMelbert"]:
         all_input_ids_2 = torch.tensor([f.input_ids_2 for f in train_features], dtype=torch.long)
         all_input_mask_2 = torch.tensor([f.input_mask_2 for f in train_features], dtype=torch.long)
         all_segment_ids_2 = torch.tensor(
