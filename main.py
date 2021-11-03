@@ -20,6 +20,7 @@ from modeling import (
     AutoModelForSequenceClassification_SPV,
     AutoModelForSequenceClassification_MIP,
     AutoModelForSequenceClassification_SPV_MIP,
+    FrameMelBert
 )
 from run_classifier_dataset_utils import processors, output_modes, compute_metrics
 from data_loader import load_train_data, load_train_data_kf, load_test_data
@@ -35,7 +36,9 @@ def main():
 
     # apply system arguments if exist
     argv = sys.argv[1:]
-    config = Config(main_conf_path="/user/HS502/yl02706/MetaphorFrame/")
+    main_conf_path="/user/HS502/yl02706/MetaphorFrame/"
+    # main_conf_path="./"
+    config = Config(main_conf_path=main_conf_path)
     print(argv)
     if len(argv) > 0:
         cmd_arg = OrderedDict()
@@ -261,7 +264,7 @@ def run_train(
             # move batch data to gpu
             batch = tuple(t.to(args.device) for t in batch)
 
-            if args.model_type in ["MELBERT_MIP", "MELBERT"]:
+            if args.model_type in ["MELBERT_MIP", "MELBERT", "FrameMelbert"]:
                 (
                     input_ids,
                     input_mask,
@@ -284,7 +287,7 @@ def run_train(
                 )
                 loss_fct = nn.NLLLoss(weight=torch.Tensor([1, args.class_weight]).to(args.device))
                 loss = loss_fct(logits.view(-1, args.num_labels), label_ids.view(-1))
-            elif args.model_type in ["MELBERT_MIP", "MELBERT"]:
+            elif args.model_type in ["MELBERT_MIP", "MELBERT", "FrameMelbert"]:
                 logits = model(
                     input_ids,
                     input_ids_2,
@@ -466,6 +469,11 @@ def load_pretrained_model(args):
     if args.model_type == "MELBERT":
         model = AutoModelForSequenceClassification_SPV_MIP(
             args=args, Model=bert, config=config, num_labels=args.num_labels
+        )
+    if args.model_type == "FrameMelbert":
+        frame_model = AutoModel.from_pretrained(args.frame_model, type_vocab_size=2, add_pooling_layer=False)
+        model = FrameMelBert(
+            args=args, Model=bert, config=config, Frame_Model=frame_model, num_labels=args.num_labels
         )
 
     model.to(args.device)
