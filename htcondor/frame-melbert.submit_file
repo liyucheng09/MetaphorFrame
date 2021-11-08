@@ -6,20 +6,21 @@
 
 #---------------------------------------------
 # Name your batch so it's easy to distinguish in the q.
-JobBatchName = "MelBert"
+JobBatchName = "Frame MelBert"
 
 # --------------------------------------------
 
-batch_size = 32
-spv_isolate = False
+batch_size = 16
+spv_isolate = True
 small_mean = False
 vua_version = 18
-num_train_epoch = 3
+num_train_epoch = 5
 frame_mean = False
+frame_model = sent_no_mask_ff
 
 # Executable and its arguments
 executable    = $ENV(HOME)/.conda/envs/lyc/bin/python
-arguments     = $ENV(HOME)/MetaphorFrame/main.py --model_type MELBERT --bert_model roberta-base --train_batch_size $(batch_size) --spv_isolate $(spv_isolate) --data_dir /user/HS502/yl02706/MetaphorFrame/data/VUA$(vua_version) --small_mean $(small_mean) --num_train_epoch $(num_train_epoch) --frame_mean $(frame_mean)
+arguments     = $ENV(HOME)/MetaphorFrame/main.py --model_type FrameMelbert --bert_model roberta-base --train_batch_size $(batch_size) --spv_isolate $(spv_isolate) --data_dir /user/HS502/yl02706/MetaphorFrame/data/VUA$(vua_version) --small_mean $(small_mean) --num_train_epoch $(num_train_epoch) --frame_mean $(frame_mean) --frame_model /vol/research/nlg/frame_finder/checkpoints/$(frame_model)
 
 # ---------------------------------------------------
 # Universe (vanilla, docker)
@@ -28,9 +29,9 @@ docker_image     = nvidia/cuda:10.2-cudnn7-runtime-ubuntu16.04
 
 # -------------------------------------------------
 # Event, out and error logs
-log    = c$(cluster).p$(process).$(batch_size).vua$(vua_version).epoch$(num_train_epoch).spvi$(spv_isolate).log
-output = c$(cluster).p$(process).$(batch_size).vua$(vua_version).epoch$(num_train_epoch).spvi$(spv_isolate).out
-error  = c$(cluster).p$(process).$(batch_size).vua$(vua_version).epoch$(num_train_epoch).spvi$(spv_isolate).error
+log    = c$(cluster).p$(process).$(batch_size).vua$(vua_version).epoch$(num_train_epoch).sm$(small_mean).fmean$(frame_mean).frame-$(frame_model).spi$(spv_isolate).log
+output = c$(cluster).p$(process).$(batch_size).vua$(vua_version).epoch$(num_train_epoch).sm$(small_mean).fmean$(frame_mean).frame-$(frame_model).spi$(spv_isolate).out
+error  = c$(cluster).p$(process).$(batch_size).vua$(vua_version).epoch$(num_train_epoch).sm$(small_mean).fmean$(frame_mean).frame-$(frame_model).spi$(spv_isolate).error
 
 # -----------------------------------
 # File Transfer, Input, Output
