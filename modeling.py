@@ -382,7 +382,10 @@ class AutoModelForSequenceClassification_SPV_MIP(nn.Module):
         target_output = self.dropout(target_output)
         pooled_output = self.dropout(pooled_output)
 
-        target_output = target_output.mean(1)  # [batch, hidden]
+        if self.args.small_mean:
+            target_output = target_output.mean(1)  # [batch, hidden]
+        else:
+            target_output = target_output.sum(dim=1)/target_mask.sum(-1, keepdim=True)
 
         # Second encoder for only the target word
         outputs_2 = self.encoder(input_ids_2, attention_mask=attention_mask_2, head_mask=head_mask)
@@ -391,7 +394,11 @@ class AutoModelForSequenceClassification_SPV_MIP(nn.Module):
         # Get target ouput with target mask
         target_output_2 = sequence_output_2 * target_mask_2.unsqueeze(2)
         target_output_2 = self.dropout(target_output_2)
-        target_output_2 = target_output_2.mean(1)
+        if self.args.small_mean:
+            target_output_2 = target_output_2.mean(1)  # [batch, hidden]
+        else:
+            target_output_2 = target_output_2.sum(dim=1)/target_mask_2.sum(-1, keepdim=True)
+        # target_output_2 = target_output_2.mean(1)
 
         # Get hidden vectors each from SPV and MIP linear layers
         if self.args.spv_isolate:
