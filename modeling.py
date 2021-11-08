@@ -507,7 +507,10 @@ class FrameMelBert(nn.Module):
         pooled_output = self.dropout(pooled_output)
         frame_sequence_output = self.dropout(frame_sequence_output)
 
-        frame_cls = frame_sequence_output[:, 0]
+        if self.args.frame_mean:
+            frame_cls = (frame_sequence_output * attention_mask.unsqueeze(2)).mean(1)
+        else:
+            frame_cls = frame_sequence_output[:, 0]
         if self.args.small_mean:
             target_output = target_output.mean(1)  # [batch, hidden]
         else:
@@ -539,6 +542,11 @@ class FrameMelBert(nn.Module):
         isolated_target_frame_embedding = self.dropout(isolated_target_frame_embedding)
 
         # Get hidden vectors each from SPV and MIP linear layers
+        if self.args.shuffle_concepts_in_batch:
+            batch_size = input_ids.shape[0]
+            frame_cls = frame_cls[torch.randperm(batch_size)]
+            isolated_target_frame_embedding = isolated_target_frame_embedding[torch.randperm(batch_size)]
+            target_frame_embedding = target_frame_embedding[torch.randperm(batch_size)]
         if self.args.spv_isolate:
             SPV_hidden = self.SPV_linear(torch.cat([pooled_output, target_output_2, frame_cls, isolated_target_frame_embedding], dim=1))
         else:

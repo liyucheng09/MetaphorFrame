@@ -471,7 +471,11 @@ def load_pretrained_model(args):
             args=args, Model=bert, config=config, num_labels=args.num_labels
         )
     if args.model_type == "FrameMelbert":
-        frame_model = AutoModel.from_pretrained(args.frame_model, type_vocab_size=2, add_pooling_layer=False)
+        if args.frame_logits:
+            # frame_model = 
+            pass
+        else:
+            frame_model = AutoModel.from_pretrained(args.frame_model, type_vocab_size=2, add_pooling_layer=False)
         model = FrameMelBert(
             args=args, Model=bert, config=config, Frame_Model=frame_model, num_labels=args.num_labels
         )
