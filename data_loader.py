@@ -137,13 +137,13 @@ def load_test_data(args, logger, processor, task_name, label_list, tokenizer, ou
         eval_features = convert_examples_to_features(
             eval_examples, label_list, args.max_seq_length, tokenizer, output_mode, args
         )
-    if args.model_type in ["MELBERT_MIP", "MELBERT"]:
+    if args.model_type in ["MELBERT_MIP", "MELBERT", "FrameMelbert"]:
         eval_features = convert_examples_to_two_features(
             eval_examples, label_list, args.max_seq_length, tokenizer, output_mode, args
         )
 
     logger.info("***** Running evaluation *****")
-    if args.model_type in ["MELBERT_MIP", "MELBERT"]:
+    if args.model_type in ["MELBERT_MIP", "MELBERT", "FrameMelbert"]:
         all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
         all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
