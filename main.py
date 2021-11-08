@@ -353,7 +353,7 @@ def run_eval(args, logger, model, eval_dataloader, all_guids, task_name, return_
     for eval_batch in tqdm(eval_dataloader, desc="Evaluating"):
         eval_batch = tuple(t.to(args.device) for t in eval_batch)
 
-        if args.model_type in ["MELBERT_MIP", "MELBERT"]:
+        if args.model_type in ["MELBERT_MIP", "MELBERT", "FrameMelbert"]:
             (
                 input_ids,
                 input_mask,
@@ -392,7 +392,7 @@ def run_eval(args, logger, model, eval_dataloader, all_guids, task_name, return_
                         out_label_ids, label_ids.detach().cpu().numpy(), axis=0
                     )
 
-            elif args.model_type in ["MELBERT_MIP", "MELBERT"]:
+            elif args.model_type in ["MELBERT_MIP", "MELBERT", "FrameMelbert"]:
                 logits = model(
                     input_ids,
                     input_ids_2,
