@@ -20,8 +20,10 @@ from modeling import (
     AutoModelForSequenceClassification_SPV,
     AutoModelForSequenceClassification_MIP,
     AutoModelForSequenceClassification_SPV_MIP,
-    FrameMelBert
+    FrameMelBert,
+    FrameLogitsMelBert
 )
+from model import FrameFinder
 from run_classifier_dataset_utils import processors, output_modes, compute_metrics
 from data_loader import load_train_data, load_train_data_kf, load_test_data
 from pprint import pprint
@@ -36,8 +38,8 @@ def main():
 
     # apply system arguments if exist
     argv = sys.argv[1:]
-    main_conf_path="/user/HS502/yl02706/MetaphorFrame/"
-    # main_conf_path="./"
+    # main_conf_path="/user/HS502/yl02706/MetaphorFrame/"
+    main_conf_path="./"
     config = Config(main_conf_path=main_conf_path)
     print(argv)
     if len(argv) > 0:
@@ -472,13 +474,15 @@ def load_pretrained_model(args):
         )
     if args.model_type == "FrameMelbert":
         if args.frame_logits:
-            # frame_model = 
-            pass
+            frame_model = FrameFinder.from_pretrained(args.frame_model, type_vocab_size=2)
+            model = FrameLogitsMelBert(
+                args=args, Model=bert, config=config, Frame_Model=frame_model, num_labels=args.num_labels
+            )
         else:
             frame_model = AutoModel.from_pretrained(args.frame_model, type_vocab_size=2, add_pooling_layer=False)
-        model = FrameMelBert(
-            args=args, Model=bert, config=config, Frame_Model=frame_model, num_labels=args.num_labels
-        )
+            model = FrameMelBert(
+                args=args, Model=bert, config=config, Frame_Model=frame_model, num_labels=args.num_labels
+            )
 
     model.to(args.device)
     if args.n_gpu > 1 and not args.no_cuda:
