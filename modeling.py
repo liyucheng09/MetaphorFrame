@@ -344,6 +344,7 @@ class AutoModelForSequenceClassification_SPV_MIP(nn.Module):
         attention_mask=None,
         labels=None,
         head_mask=None,
+        input_with_mask_ids=None,
     ):
         """
         Inputs:
@@ -373,14 +374,29 @@ class AutoModelForSequenceClassification_SPV_MIP(nn.Module):
             head_mask=head_mask,
         )
         sequence_output = outputs[0]  # [batch, max_len, hidden]
-        pooled_output = outputs[1]  # [batch, hidden]
 
         # Get target ouput with target mask
         target_output = sequence_output * target_mask.unsqueeze(2)
-
-        # dropout
         target_output = self.dropout(target_output)
-        pooled_output = self.dropout(pooled_output)
+
+        if self.args.spvmask:
+            outputs_with_mask = self.encoder(
+                input_ids,
+                token_type_ids=token_type_ids,
+                attention_mask=attention_mask,
+                head_mask=head_mask,
+            )
+            sequence_output_with_mask = outputs_with_mask[0]
+            mask_output = sequence_output * target_mask.unsqueeze(2)
+            mask_output = self.dropout(target_output)
+            if self.args.small_mean:
+                mask_output = mask_output.mean(1)  # [batch, hidden]
+            else:
+                mask_output = mask_output.sum(dim=1)/target_mask.sum(-1, keepdim=True)
+            pooled_output = mask_output
+        else:
+            pooled_output = outputs[1]  # [batch, hidden]
+            pooled_output = self.dropout(pooled_output)
 
         if self.args.small_mean:
             target_output = target_output.mean(1)  # [batch, hidden]

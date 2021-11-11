@@ -86,6 +86,7 @@ class InputFeatures(object):
         input_ids_2=None,
         input_mask_2=None,
         segment_ids_2=None,
+        input_with_mask_ids=None,
     ):
         self.input_ids = input_ids
         self.input_mask = input_mask
@@ -95,6 +96,7 @@ class InputFeatures(object):
         self.input_ids_2 = input_ids_2
         self.input_mask_2 = input_mask_2
         self.segment_ids_2 = segment_ids_2
+        self.input_with_mask_ids = input_with_mask_ids
 
 
 class DataProcessor(object):
@@ -536,15 +538,26 @@ def convert_examples_to_two_features(
         except TypeError:
             pass
 
+        try:
+            tokens_with_mask = tokens
+            for i in range(len(text_b)):
+                tokens_with_mask[tokens_b + i] = tokenizer.mask_token
+        except TypeError:
+            pass
+        
+        input_with_mask_ids = tokenizer.convert_tokens_to_ids(tokens_with_mask)
+
         input_mask = [1] * len(input_ids)
         padding = [tokenizer.convert_tokens_to_ids(tokenizer.pad_token)] * (
             max_seq_length - len(input_ids)
         )
         input_ids += padding
+        input_with_mask_ids += padding
         input_mask += [0] * len(padding)
         segment_ids += [0] * len(padding)
 
         assert len(input_ids) == max_seq_length
+        assert len(input_with_mask_ids) == max_seq_length
         assert len(input_mask) == max_seq_length
         assert len(segment_ids) == max_seq_length
 
@@ -581,6 +594,7 @@ def convert_examples_to_two_features(
         features.append(
             InputFeatures(
                 input_ids=input_ids,
+                input_with_mask_ids = input_with_mask_ids,
                 input_mask=input_mask,
                 segment_ids=segment_ids,
                 label_id=label_id,

@@ -16,7 +16,7 @@ def load_train_data(args, logger, processor, task_name, label_list, tokenizer, o
     # Prepare data loader
     if task_name == "vua":
         train_examples = processor.get_train_examples(args.data_dir)
-        # train_examples = train_examples[:100]
+        train_examples = train_examples[:20]
     elif task_name == "trofi":
         train_examples = processor.get_train_examples(args.data_dir, k)
     else:
@@ -49,15 +49,28 @@ def load_train_data(args, logger, processor, task_name, label_list, tokenizer, o
         all_segment_ids_2 = torch.tensor(
             [f.segment_ids_2 for f in train_features], dtype=torch.long
         )
-        train_data = TensorDataset(
-            all_input_ids,
-            all_input_mask,
-            all_segment_ids,
-            all_label_ids,
-            all_input_ids_2,
-            all_input_mask_2,
-            all_segment_ids_2,
-        )
+        if args.spvmask:
+            all_input_with_mask_ids = torch.tensor([f.input_with_mask_ids for f in train_features], dtype=torch.long)
+            train_data = TensorDataset(
+                all_input_ids,
+                all_input_mask,
+                all_segment_ids,
+                all_label_ids,
+                all_input_ids_2,
+                all_input_mask_2,
+                all_segment_ids_2,
+                all_input_with_mask_ids
+            )
+        else:
+            train_data = TensorDataset(
+                all_input_ids,
+                all_input_mask,
+                all_segment_ids,
+                all_label_ids,
+                all_input_ids_2,
+                all_input_mask_2,
+                all_segment_ids_2,
+            )
     else:
         train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids)
     train_sampler = RandomSampler(train_data)
@@ -124,6 +137,7 @@ def load_train_data_kf(
 def load_test_data(args, logger, processor, task_name, label_list, tokenizer, output_mode, k=None):
     if task_name == "vua":
         eval_examples = processor.get_test_examples(args.data_dir)
+        eval_examples = eval_examples[:20]
     elif task_name == "trofi":
         eval_examples = processor.get_test_examples(args.data_dir, k)
     else:
@@ -153,16 +167,30 @@ def load_test_data(args, logger, processor, task_name, label_list, tokenizer, ou
         all_input_ids_2 = torch.tensor([f.input_ids_2 for f in eval_features], dtype=torch.long)
         all_input_mask_2 = torch.tensor([f.input_mask_2 for f in eval_features], dtype=torch.long)
         all_segment_ids_2 = torch.tensor([f.segment_ids_2 for f in eval_features], dtype=torch.long)
-        eval_data = TensorDataset(
-            all_input_ids,
-            all_input_mask,
-            all_segment_ids,
-            all_label_ids,
-            all_idx,
-            all_input_ids_2,
-            all_input_mask_2,
-            all_segment_ids_2,
-        )
+        if args.spvmask:
+            all_input_with_mask_ids = torch.tensor([f.input_with_mask_ids for f in eval_features], dtype=torch.long)
+            eval_data = TensorDataset(
+                all_input_ids,
+                all_input_mask,
+                all_segment_ids,
+                all_label_ids,
+                all_idx,
+                all_input_ids_2,
+                all_input_mask_2,
+                all_segment_ids_2,
+                all_input_with_mask_ids
+            )
+        else:
+            eval_data = TensorDataset(
+                all_input_ids,
+                all_input_mask,
+                all_segment_ids,
+                all_label_ids,
+                all_idx,
+                all_input_ids_2,
+                all_input_mask_2,
+                all_segment_ids_2,
+            )
     else:
         all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
         all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
