@@ -267,7 +267,7 @@ def run_train(
             batch = tuple(t.to(args.device) for t in batch)
 
             if args.model_type in ["MELBERT_MIP", "MELBERT", "FrameMelbert"]:
-                if args.spvmask:
+                if args.spvmask or args.spvmaskcls:
                     (
                         input_ids,
                         input_mask,
@@ -370,7 +370,7 @@ def run_eval(args, logger, model, eval_dataloader, all_guids, task_name, return_
         eval_batch = tuple(t.to(args.device) for t in eval_batch)
 
         if args.model_type in ["MELBERT_MIP", "MELBERT", "FrameMelbert"]:
-            if args.spvmask:
+            if args.spvmask or args.spvmaskcls:
                 (
                     input_ids,
                     input_mask,
@@ -392,7 +392,7 @@ def run_eval(args, logger, model, eval_dataloader, all_guids, task_name, return_
                     input_ids_2,
                     input_mask_2,
                     segment_ids_2,
-                ) = batch
+                ) = eval_batch
                 input_with_mask_ids=None
         else:
             input_ids, input_mask, segment_ids, label_ids, idx = eval_batch
@@ -431,6 +431,7 @@ def run_eval(args, logger, model, eval_dataloader, all_guids, task_name, return_
                     attention_mask_2=input_mask_2,
                     token_type_ids=segment_ids,
                     attention_mask=input_mask,
+                    input_with_mask_ids=input_with_mask_ids
                 )
                 loss_fct = nn.NLLLoss()
                 tmp_eval_loss = loss_fct(logits.view(-1, args.num_labels), label_ids.view(-1))
