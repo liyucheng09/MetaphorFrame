@@ -568,7 +568,7 @@ class FrameLogitsMelBert(nn.Module):
 
     def __init__(self, args, Model, config, Frame_Model, num_labels=2):
         """Initialize the model"""
-        super(FrameMelBert, self).__init__()
+        super(FrameLogitsMelBert, self).__init__()
         self.num_labels = num_labels
         self.encoder = Model
         self.frame_encoder = Frame_Model
@@ -642,11 +642,11 @@ class FrameLogitsMelBert(nn.Module):
         )
 
         sequence_output = outputs[0]  # [batch, max_len, hidden]
-        frame_logits = frame_outputs.logits
+        frame_output = frame_outputs.logits
         pooled_output = outputs[1]  # [batch, hidden]
 
-        frame_logits[:, 0] = torch.sigmoid(frame_logits[:, 0])
-        frame_logits[:, 1:] = torch.softmax(frame_logits[:, 1:], dim=1)
+        frame_cls = torch.sigmoid(frame_output[:, 0])
+        frame_logits = torch.softmax(frame_output[:, 1:], dim=1)
 
         # Get target ouput with target mask
         target_output = sequence_output * target_mask.unsqueeze(2)
@@ -658,9 +658,7 @@ class FrameLogitsMelBert(nn.Module):
 
         if self.args.frame_mean:
             # frame_cls = (frame_sequence_output * attention_mask.unsqueeze(2)).mean(1)
-            frame_cls = (frame_logits[:, 1:] * attention_mask[:, 1:].unsqueeze(2)).sum(dim=1)/attention_mask[:, 1:].sum(-1, keepdim=True)
-        else:
-            frame_cls = frame_logits[:, 0]
+            frame_cls = (frame_logits * attention_mask[:, 1:].unsqueeze(2)).sum(dim=1)/attention_mask[:, 1:].sum(-1, keepdim=True)
 
         if self.args.small_mean:
             target_output = target_output.mean(1)  # [batch, hidden]
@@ -669,21 +667,21 @@ class FrameLogitsMelBert(nn.Module):
 
         _, target_index_y = target_mask.max(dim=-1)
         target_index_x = torch.arange(target_index_y.size(0), device=target_mask.device)
-        target_frame_distribution = frame_logits[target_index_x, target_index_y]
+        target_frame_distribution = frame_logits[target_index_x, target_index_y-1]
 
         # Second encoder for only the target word
         outputs_2 = self.encoder(input_ids_2, attention_mask=attention_mask_2, head_mask=head_mask)
         frame_outputs_2 = self.frame_encoder(input_ids_2, token_type_ids=target_mask_2.int(), attention_mask=attention_mask_2, head_mask=head_mask)
 
         sequence_output_2 = outputs_2[0]  # [batch, max_len, hidden]
-        frame_logits_2 = frame_outputs_2.logits
+        frame_output_2 = frame_outputs_2.logits
 
-        frame_logits_2[:, 0] = torch.sigmoid(frame_logits_2[:, 0])
-        frame_logits_2[:, 1:] = torch.softmax(frame_logits_2[:, 1:], dim=1)
+        # frame_cls_2[:, 0] = torch.sigmoid(frame_output_2[:, 0])
+        frame_logits_2 = torch.softmax(frame_output_2[:, 1:], dim=1)
 
         _, target_index_y_2 = target_mask_2.max(dim=-1)
         target_index_x_2 = torch.arange(target_index_y_2.size(0), device=target_mask_2.device)
-        isolated_target_frame_distribution = frame_logits_2[target_index_x_2, target_index_y_2]
+        isolated_target_frame_distribution = frame_logits_2[target_index_x_2, target_index_y_2-1]
 
         # Get target ouput with target mask
         target_output_2 = sequence_output_2 * target_mask_2.unsqueeze(2)

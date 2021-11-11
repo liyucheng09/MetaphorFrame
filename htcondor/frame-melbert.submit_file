@@ -17,10 +17,12 @@ vua_version = 18
 num_train_epoch = 5
 frame_mean = False
 frame_model = sent_no_mask_ff
+shuffle_concepts_in_batch = False
+frame_logits = True
 
 # Executable and its arguments
 executable    = $ENV(HOME)/.conda/envs/lyc/bin/python
-arguments     = $ENV(HOME)/MetaphorFrame/main.py --model_type FrameMelbert --bert_model roberta-base --train_batch_size $(batch_size) --spv_isolate $(spv_isolate) --data_dir /user/HS502/yl02706/MetaphorFrame/data/VUA$(vua_version) --small_mean $(small_mean) --num_train_epoch $(num_train_epoch) --frame_mean $(frame_mean) --frame_model /vol/research/nlg/frame_finder/checkpoints/$(frame_model)
+arguments     = $ENV(HOME)/MetaphorFrame/main.py --model_type FrameMelbert --bert_model roberta-base --train_batch_size $(batch_size) --spv_isolate $(spv_isolate) --data_dir /user/HS502/yl02706/MetaphorFrame/data/VUA$(vua_version) --small_mean $(small_mean) --num_train_epoch $(num_train_epoch) --frame_mean $(frame_mean) --frame_model /vol/research/nlg/frame_finder/checkpoints/$(frame_model) --shuffle_concepts_in_batch $(shuffle_concepts_in_batch) --frame_logits $(frame_logits)
 
 # ---------------------------------------------------
 # Universe (vanilla, docker)
@@ -29,9 +31,9 @@ docker_image     = nvidia/cuda:10.2-cudnn7-runtime-ubuntu16.04
 
 # -------------------------------------------------
 # Event, out and error logs
-log    = c$(cluster).p$(process).$(batch_size).vua$(vua_version).epoch$(num_train_epoch).sm$(small_mean).fmean$(frame_mean).frame-$(frame_model).spi$(spv_isolate).log
-output = c$(cluster).p$(process).$(batch_size).vua$(vua_version).epoch$(num_train_epoch).sm$(small_mean).fmean$(frame_mean).frame-$(frame_model).spi$(spv_isolate).out
-error  = c$(cluster).p$(process).$(batch_size).vua$(vua_version).epoch$(num_train_epoch).sm$(small_mean).fmean$(frame_mean).frame-$(frame_model).spi$(spv_isolate).error
+log    = c$(cluster).p$(process).$(batch_size).vua$(vua_version).epoch$(num_train_epoch).sm$(small_mean).fmean$(frame_mean).frame-$(frame_model).spi$(spv_isolate).shuffle$(shuffle_concepts_in_batch).logits$(frame_logits).log
+output = c$(cluster).p$(process).$(batch_size).vua$(vua_version).epoch$(num_train_epoch).sm$(small_mean).fmean$(frame_mean).frame-$(frame_model).spi$(spv_isolate).shuffle$(shuffle_concepts_in_batch).logits$(frame_logits).out
+error  = c$(cluster).p$(process).$(batch_size).vua$(vua_version).epoch$(num_train_epoch).sm$(small_mean).fmean$(frame_mean).frame-$(frame_model).spi$(spv_isolate).shuffle$(shuffle_concepts_in_batch).logits$(frame_logits).error
 
 # -----------------------------------
 # File Transfer, Input, Output
