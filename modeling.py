@@ -381,7 +381,7 @@ class AutoModelForSequenceClassification_SPV_MIP(nn.Module):
 
         if self.args.spvmask:
             outputs_with_mask = self.encoder(
-                input_ids,
+                input_with_mask_ids,
                 token_type_ids=token_type_ids,
                 attention_mask=attention_mask,
                 head_mask=head_mask,
@@ -396,7 +396,7 @@ class AutoModelForSequenceClassification_SPV_MIP(nn.Module):
             pooled_output = mask_output
         elif self.args.spvmaskcls:
             outputs_with_mask = self.encoder(
-                input_ids,
+                input_with_mask_ids,
                 token_type_ids=token_type_ids,
                 attention_mask=attention_mask,
                 head_mask=head_mask,
