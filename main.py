@@ -38,8 +38,8 @@ def main():
 
     # apply system arguments if exist
     argv = sys.argv[1:]
-    # main_conf_path="/user/HS502/yl02706/MetaphorFrame/"
-    main_conf_path="./"
+    main_conf_path="/user/HS502/yl02706/MetaphorFrame/"
+    # main_conf_path="./"
     config = Config(main_conf_path=main_conf_path)
     print(argv)
     if len(argv) > 0:
