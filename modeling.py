@@ -394,6 +394,15 @@ class AutoModelForSequenceClassification_SPV_MIP(nn.Module):
             else:
                 mask_output = mask_output.sum(dim=1)/target_mask.sum(-1, keepdim=True)
             pooled_output = mask_output
+        elif self.args.spvmaskcls:
+            outputs_with_mask = self.encoder(
+                input_ids,
+                token_type_ids=token_type_ids,
+                attention_mask=attention_mask,
+                head_mask=head_mask,
+            )
+            pooled_output = outputs_with_mask[1]
+            pooled_output = self.dropout(pooled_output)
         else:
             pooled_output = outputs[1]  # [batch, hidden]
             pooled_output = self.dropout(pooled_output)
