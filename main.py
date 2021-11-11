@@ -38,8 +38,8 @@ def main():
 
     # apply system arguments if exist
     argv = sys.argv[1:]
-    main_conf_path="/user/HS502/yl02706/MetaphorFrame/"
-    # main_conf_path="./"
+    # main_conf_path="/user/HS502/yl02706/MetaphorFrame/"
+    main_conf_path="./"
     config = Config(main_conf_path=main_conf_path)
     print(argv)
     if len(argv) > 0:
@@ -267,15 +267,28 @@ def run_train(
             batch = tuple(t.to(args.device) for t in batch)
 
             if args.model_type in ["MELBERT_MIP", "MELBERT", "FrameMelbert"]:
-                (
-                    input_ids,
-                    input_mask,
-                    segment_ids,
-                    label_ids,
-                    input_ids_2,
-                    input_mask_2,
-                    segment_ids_2,
-                ) = batch
+                if args.spvmask:
+                    (
+                        input_ids,
+                        input_mask,
+                        segment_ids,
+                        label_ids,
+                        input_ids_2,
+                        input_mask_2,
+                        segment_ids_2,
+                        input_with_mask_ids
+                    ) = batch
+                else:
+                    (
+                        input_ids,
+                        input_mask,
+                        segment_ids,
+                        label_ids,
+                        input_ids_2,
+                        input_mask_2,
+                        segment_ids_2,
+                    ) = batch
+                    input_with_mask_ids=None
             else:
                 input_ids, input_mask, segment_ids, label_ids = batch
 
@@ -298,6 +311,7 @@ def run_train(
                     attention_mask_2=input_mask_2,
                     token_type_ids=segment_ids,
                     attention_mask=input_mask,
+                    input_with_mask_ids=input_with_mask_ids
                 )
                 loss_fct = nn.NLLLoss(weight=torch.Tensor([1, args.class_weight]).to(args.device))
                 loss = loss_fct(logits.view(-1, args.num_labels), label_ids.view(-1))
@@ -356,16 +370,30 @@ def run_eval(args, logger, model, eval_dataloader, all_guids, task_name, return_
         eval_batch = tuple(t.to(args.device) for t in eval_batch)
 
         if args.model_type in ["MELBERT_MIP", "MELBERT", "FrameMelbert"]:
-            (
-                input_ids,
-                input_mask,
-                segment_ids,
-                label_ids,
-                idx,
-                input_ids_2,
-                input_mask_2,
-                segment_ids_2,
-            ) = eval_batch
+            if args.spvmask:
+                (
+                    input_ids,
+                    input_mask,
+                    segment_ids,
+                    label_ids,
+                    idx,
+                    input_ids_2,
+                    input_mask_2,
+                    segment_ids_2,
+                    input_with_mask_ids,
+                ) = eval_batch
+            else:
+                (
+                    input_ids,
+                    input_mask,
+                    segment_ids,
+                    label_ids,
+                    idx,
+                    input_ids_2,
+                    input_mask_2,
+                    segment_ids_2,
+                ) = batch
+                input_with_mask_ids=None
         else:
             input_ids, input_mask, segment_ids, label_ids, idx = eval_batch
 
