@@ -38,8 +38,8 @@ def main():
 
     # apply system arguments if exist
     argv = sys.argv[1:]
-    # main_conf_path="/user/HS502/yl02706/MetaphorFrame/"
-    main_conf_path="./"
+    main_conf_path="/user/HS502/yl02706/MetaphorFrame/"
+    # main_conf_path="./"
     config = Config(main_conf_path=main_conf_path)
     print(argv)
     if len(argv) > 0:
@@ -52,7 +52,7 @@ def main():
         config.update_params(cmd_arg)
 
     args = config
-    pprint(args.__dict__)
+    # pprint(args.__dict__)
 
     # logger
     if "saves" in args.bert_model:
@@ -349,6 +349,15 @@ def run_train(
                     save_model(args, model, tokenizer)
             if args.task_name == "vua":
                 save_model(args, model, tokenizer)
+        
+        if args.do_shuffle_eval:
+            all_guids, eval_dataloader = load_test_data(
+                args, logger, processor, task_name, label_list, tokenizer, output_mode, k
+            )
+            model.args.shuffle_concepts_in_batch = True
+            logger.info("^^^^^^^^ Shuffle eval ^^^^^^^ ")
+            result = run_eval(args, logger, model, eval_dataloader, all_guids, task_name)
+            model.args.shuffle_concepts_in_batch = False
 
     logger.info(f"-----Best Result-----")
     for key in sorted(max_result.keys()):

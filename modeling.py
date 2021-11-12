@@ -485,6 +485,7 @@ class FrameMelBert(nn.Module):
         attention_mask=None,
         labels=None,
         head_mask=None,
+        input_with_mask_ids=None,
     ):
         """
         Inputs:
