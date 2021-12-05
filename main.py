@@ -21,7 +21,8 @@ from modeling import (
     AutoModelForSequenceClassification_MIP,
     AutoModelForSequenceClassification_SPV_MIP,
     FrameMelBert,
-    FrameLogitsMelBert
+    FrameLogitsMelBert,
+    MultiTaskMelbert
 )
 from model import FrameFinder
 from run_classifier_dataset_utils import processors, output_modes, compute_metrics
@@ -118,6 +119,8 @@ def main():
         train_dataloader = load_train_data(
             args, logger, processor, task_name, label_list, tokenizer, output_mode
         )
+        if args.multitask:
+            frame_dls = load_frame_data(tokenizer, args)
         model, best_result = run_train(
             args,
             logger,
@@ -226,6 +229,7 @@ def run_train(
     label_list,
     tokenizer,
     output_mode,
+    train_frame_dl=None,
     k=None,
 ):
     tr_loss = 0
@@ -260,10 +264,17 @@ def run_train(
     model.train()
     max_val_f1 = -1
     max_result = {}
+    if train_frame_dl is not None:
+        train_dataloader = zip(train_dataloader, train_frame_dl)
     for epoch in trange(int(args.num_train_epoch), desc="Epoch"):
         tr_loss = 0
         for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
             # move batch data to gpu
+            if train_frame_dl is not None:
+                batch, frame_batch = batch
+                frame_batch = tuple(t.to(args.device) for t in frame_batch)
+                (frame_input_ids, frame_attention_mask, frame_token_type, frame_labels) = frame_batch
+
             batch = tuple(t.to(args.device) for t in batch)
 
             if args.model_type in ["MELBERT_MIP", "MELBERT", "FrameMelbert"]:
@@ -291,7 +302,7 @@ def run_train(
                     input_with_mask_ids=None
             else:
                 input_ids, input_mask, segment_ids, label_ids = batch
-
+            
             # compute loss values
             if args.model_type in ["BERT_SEQ", "BERT_BASE", "MELBERT_SPV"]:
                 logits = model(
@@ -303,18 +314,36 @@ def run_train(
                 loss_fct = nn.NLLLoss(weight=torch.Tensor([1, args.class_weight]).to(args.device))
                 loss = loss_fct(logits.view(-1, args.num_labels), label_ids.view(-1))
             elif args.model_type in ["MELBERT_MIP", "MELBERT", "FrameMelbert"]:
-                logits = model(
-                    input_ids,
-                    input_ids_2,
-                    target_mask=(segment_ids == 1),
-                    target_mask_2=segment_ids_2,
-                    attention_mask_2=input_mask_2,
-                    token_type_ids=segment_ids,
-                    attention_mask=input_mask,
-                    input_with_mask_ids=input_with_mask_ids
-                )
+                if train_frame_dl is not None:
+                    logits, frame_loss = model(
+                        input_ids,
+                        input_ids_2,
+                        target_mask=(segment_ids == 1),
+                        target_mask_2=segment_ids_2,
+                        attention_mask_2=input_mask_2,
+                        frame_input_ids = frame_input_ids,
+                        frame_attention_mask = frame_attention_mask,
+                        frame_token_type = frame_token_type,
+                        frame_labels = frame_labels,
+                        token_type_ids=segment_ids,
+                        attention_mask=input_mask,
+                        input_with_mask_ids=input_with_mask_ids
+                    )
+                else:
+                    logits = model(
+                        input_ids,
+                        input_ids_2,
+                        target_mask=(segment_ids == 1),
+                        target_mask_2=segment_ids_2,
+                        attention_mask_2=input_mask_2,
+                        token_type_ids=segment_ids,
+                        attention_mask=input_mask,
+                        input_with_mask_ids=input_with_mask_ids
+                    )
                 loss_fct = nn.NLLLoss(weight=torch.Tensor([1, args.class_weight]).to(args.device))
                 loss = loss_fct(logits.view(-1, args.num_labels), label_ids.view(-1))
+                if train_frame_dl is not None:
+                    loss += frame_loss
 
             # average loss if on multi-gpu.
             if args.n_gpu > 1:
@@ -514,6 +543,11 @@ def load_pretrained_model(args):
         if args.frame_logits:
             frame_model = FrameFinder.from_pretrained(args.frame_model, type_vocab_size=2)
             model = FrameLogitsMelBert(
+                args=args, Model=bert, config=config, Frame_Model=frame_model, num_labels=args.num_labels
+            )
+        elif args.multitask:
+            frame_model = FrameFinder.from_pretrained(args.frame_model, type_vocab_size=2)
+            model = MultiTaskMelbert(
                 args=args, Model=bert, config=config, Frame_Model=frame_model, num_labels=args.num_labels
             )
         else:

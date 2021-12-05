@@ -6,3 +6,5 @@ data/
 *.out
 *.log
 *.error
+
+.DS_Store

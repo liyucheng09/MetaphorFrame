@@ -81,6 +81,7 @@ class FrameFinder(RobertaForTokenClassification):
         return TokenClassifierOutput(
             loss=loss,
             logits=logits,
+            last_hidden_state = outputs.last_hidden_state,
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
         )
