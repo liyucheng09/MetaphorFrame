@@ -10,7 +10,101 @@ from run_classifier_dataset_utils import (
     convert_examples_to_features,
     convert_two_examples_to_features,
 )
+import datasets
+from lyc.data import get_hf_ds_scripts_path, get_tokenized_ds, processor, get_dataloader
 
+def tokenize_alingn_labels_replace_with_mask_and_add_type_ids(ds, do_mask=True):
+    results={}
+
+    target_ids = []
+    sent_labels = [0 for i in range(797)]
+    for i in range(len(ds['frame_tags'])):
+        l = ds['frame_tags'][i]
+        if l:
+            target_ids.append(i)
+            sent_labels[l]=1
+    
+    if do_mask:
+        tokens = ds['tokens']
+        for target_idx in target_ids:
+            tokens[target_idx] = '<mask>'
+        ds['tokens'] = tokens
+
+    for k,v in ds.items():
+        if 'id' in k:
+            results[k]=v
+            continue
+        if k == 'tokens':
+            out_=tokenizer(v, is_split_into_words=True)
+            results.update(out_)
+    labels={'sent_labels': sent_labels}
+    for i, column in enumerate([k for k in ds.keys() if 'tag' in k]):
+        label = ds[column]
+        words_ids = out_.word_ids()
+        previous_word_idx = None
+        label_ids = []
+        is_target = []
+        for word_idx in words_ids:
+            if word_idx is None:
+                label_ids.append(-100)
+            elif word_idx!=previous_word_idx:
+                label_ids.append(label[word_idx])
+            else:
+                label_ids.append(-100)
+            if word_idx in target_ids:
+                is_target.append(1)
+            else:
+                is_target.append(0)
+            previous_word_idx = word_idx
+        labels[column] = label_ids
+        labels['is_target'] = is_target
+    
+    results.update(labels)
+    return results
+
+def combine_func(df):
+    """combine a dataframe group to a one-line instance.
+
+    Args:
+        df ([dataframe]): a dataframe, represents a group
+
+    Returns:
+        a one-line dict
+    """
+    label_values = np.stack(df['frame_tags'].values)
+    processed = np.zeros_like(label_values)
+
+    for token_id in range(label_values.shape[1]):
+        labels = label_values[:, token_id]
+        for i in range(len(labels)):
+            if labels[i] != 0:
+                processed[i, token_id] = labels[i]
+                break
+    aggregated_tags = processed.sum(axis=0)
+    result = df.iloc[0].to_dict()
+    result['frame_tags'] = aggregated_tags
+
+    return result
+
+def load_frame_data(tokenizer, args, combine = False, data_dir = 'data/open_sesame_v1_data/fn1.7', do_mask=False):
+    script = get_hf_ds_scripts_path('sesame')
+    ds = datasets.load_dataset(script, data_dir=data_dir)
+    if combine:
+        for k,v in ds.items():
+            ds[k] = processor.combine(v, 'sent_id', combine_func)
+    ds = ds.map(
+        tokenize_alingn_labels_replace_with_mask_and_add_type_ids, fn_kwargs={'do_mask':do_mask}
+    )
+    train_ds = datasets.concatenate_datasets([ds['train'], ds['test']])
+    train_ds = train_ds.rename_column('frame_tags', 'labels')
+    train_ds = train_ds.rename_column('is_target', 'token_type_ids')
+
+    eval_ds = ds['validation']
+    eval_ds = eval_ds.rename_column('frame_tags', 'labels')
+    eval_ds = eval_ds.rename_column('is_target', 'token_type_ids')
+
+    train_dl, eval_dl = get_dataloader(train_ds, batch_size=args.train_batch_size)
+    return train_dl, eval_dl
 
 def load_train_data(args, logger, processor, task_name, label_list, tokenizer, output_mode, k=None):
     # Prepare data loader
@@ -49,7 +143,7 @@ def load_train_data(args, logger, processor, task_name, label_list, tokenizer, o
         all_segment_ids_2 = torch.tensor(
             [f.segment_ids_2 for f in train_features], dtype=torch.long
         )
-        if args.spvmask:
+        if args.spvmask or args.spvmaskcls:
             all_input_with_mask_ids = torch.tensor([f.input_with_mask_ids for f in train_features], dtype=torch.long)
             train_data = TensorDataset(
                 all_input_ids,
@@ -167,7 +261,7 @@ def load_test_data(args, logger, processor, task_name, label_list, tokenizer, ou
         all_input_ids_2 = torch.tensor([f.input_ids_2 for f in eval_features], dtype=torch.long)
         all_input_mask_2 = torch.tensor([f.input_mask_2 for f in eval_features], dtype=torch.long)
         all_segment_ids_2 = torch.tensor([f.segment_ids_2 for f in eval_features], dtype=torch.long)
-        if args.spvmask:
+        if args.spvmask or args.spvmaskcls:
             all_input_with_mask_ids = torch.tensor([f.input_with_mask_ids for f in eval_features], dtype=torch.long)
             eval_data = TensorDataset(
                 all_input_ids,
