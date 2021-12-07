@@ -86,7 +86,7 @@ def combine_func(df):
 
     return result
 
-def load_frame_data(tokenizer, args, combine = False, data_dir = 'data/open_sesame_v1_data/fn1.7', do_mask=False):
+def load_frame_data(tokenizer, args, combine = False, melbert_data_size=None, data_dir = 'data/open_sesame_v1_data/fn1.7', do_mask=False):
     script = get_hf_ds_scripts_path('sesame')
     ds = datasets.load_dataset(script, data_dir=data_dir)
     if combine:
@@ -103,7 +103,7 @@ def load_frame_data(tokenizer, args, combine = False, data_dir = 'data/open_sesa
     eval_ds = eval_ds.rename_column('frame_tags', 'labels')
     eval_ds = eval_ds.rename_column('is_target', 'token_type_ids')
 
-    train_dl, eval_dl = get_dataloader(train_ds, cols=['input_ids', 'token_type_ids', 'labels', 'attention_mask'], batch_size=args.train_batch_size), get_dataloader(eval_ds, cols=['input_ids', 'token_type_ids', 'labels', 'attention_mask'], batch_size=args.eval_batch_size)
+    train_dl, eval_dl = get_dataloader(train_ds, cols=['input_ids', 'token_type_ids', 'labels', 'attention_mask'], batch_size=args.train_batch_size if melbert_data_size is None else int((len(train_ds)/melbert_data_size)*args.train_batch_size)), get_dataloader(eval_ds, cols=['input_ids', 'token_type_ids', 'labels', 'attention_mask'], batch_size=args.eval_batch_size)
     return train_dl, eval_dl
 
 def load_train_data(args, logger, processor, task_name, label_list, tokenizer, output_mode, k=None):

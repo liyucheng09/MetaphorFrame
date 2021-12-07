@@ -123,7 +123,9 @@ def main():
             args, logger, processor, task_name, label_list, tokenizer, output_mode
         )
         if args.multitask:
-            frame_dls = load_frame_data(frame_tokenizer, args)
+            train_frame_dl, eval_frame_dl = load_frame_data(frame_tokenizer, args, melbert_data_size = len(train_dataloader.dataset))
+        else:
+            train_frame_dl, eval_frame_dl = None, None
         model, best_result = run_train(
             args,
             logger,
@@ -134,6 +136,7 @@ def main():
             label_list,
             tokenizer,
             output_mode,
+            train_frame_dl=train_frame_dl
         )
 
     # TroFi / MOH-X (K-fold)
@@ -275,8 +278,8 @@ def run_train(
             # move batch data to gpu
             if train_frame_dl is not None:
                 batch, frame_batch = batch
-                frame_batch = tuple(t.to(args.device) for t in frame_batch)
-                (frame_input_ids, frame_attention_mask, frame_token_type, frame_labels) = frame_batch
+                frame_batch = tuple(frame_batch[t].to(args.device) for t in frame_batch)
+                (frame_attention_mask, frame_labels, frame_input_ids, frame_token_type) = frame_batch
 
             batch = tuple(t.to(args.device) for t in batch)
 

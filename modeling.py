@@ -590,9 +590,6 @@ class FrameMelBert(nn.Module):
         return logits
 
 class MultiTaskMelbert(FrameMelBert):
-    def __init__(self, *args):
-        super().__init__(*args)
-        self.frame_linear = torch.nn.Linear(768, 797)
 
     def forward(
         self,
@@ -684,7 +681,7 @@ class MultiTaskMelbert(FrameMelBert):
         frame_outputs_2 = self.frame_encoder(input_ids_2, token_type_ids=target_mask_2.int(), attention_mask=attention_mask_2, head_mask=head_mask)
 
         sequence_output_2 = outputs_2[0]  # [batch, max_len, hidden]
-        frame_sequence_output_2 = frame_outputs_2[0]
+        frame_sequence_output_2 = frame_outputs_2.last_hidden_state
 
         _, target_index_y_2 = target_mask_2.max(dim=-1)
         target_index_x_2 = torch.arange(target_index_y_2.size(0), device=target_mask_2.device)
