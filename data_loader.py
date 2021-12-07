@@ -13,7 +13,7 @@ from run_classifier_dataset_utils import (
 import datasets
 from lyc.data import get_hf_ds_scripts_path, get_tokenized_ds, processor, get_dataloader
 
-def tokenize_alingn_labels_replace_with_mask_and_add_type_ids(ds, do_mask=True):
+def tokenize_alingn_labels_replace_with_mask_and_add_type_ids(ds, tokenizer=None, do_mask=True):
     results={}
 
     target_ids = []
@@ -93,7 +93,7 @@ def load_frame_data(tokenizer, args, combine = False, data_dir = 'data/open_sesa
         for k,v in ds.items():
             ds[k] = processor.combine(v, 'sent_id', combine_func)
     ds = ds.map(
-        tokenize_alingn_labels_replace_with_mask_and_add_type_ids, fn_kwargs={'do_mask':do_mask}
+        tokenize_alingn_labels_replace_with_mask_and_add_type_ids, fn_kwargs={'tokenizer':tokenizer, 'do_mask':do_mask}
     )
     train_ds = datasets.concatenate_datasets([ds['train'], ds['test']])
     train_ds = train_ds.rename_column('frame_tags', 'labels')
@@ -103,7 +103,7 @@ def load_frame_data(tokenizer, args, combine = False, data_dir = 'data/open_sesa
     eval_ds = eval_ds.rename_column('frame_tags', 'labels')
     eval_ds = eval_ds.rename_column('is_target', 'token_type_ids')
 
-    train_dl, eval_dl = get_dataloader(train_ds, batch_size=args.train_batch_size)
+    train_dl, eval_dl = get_dataloader(train_ds, cols=['input_ids', 'token_type_ids', 'labels', 'attention_mask'], batch_size=args.train_batch_size), get_dataloader(eval_ds, cols=['input_ids', 'token_type_ids', 'labels', 'attention_mask'], batch_size=args.eval_batch_size)
     return train_dl, eval_dl
 
 def load_train_data(args, logger, processor, task_name, label_list, tokenizer, output_mode, k=None):
