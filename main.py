@@ -26,7 +26,7 @@ from modeling import (
 )
 from model import FrameFinder
 from run_classifier_dataset_utils import processors, output_modes, compute_metrics
-from data_loader import load_train_data, load_train_data_kf, load_test_data
+from data_loader import load_train_data, load_train_data_kf, load_test_data, load_frame_data
 from pprint import pprint
 
 CONFIG_NAME = "config.json"
@@ -39,8 +39,8 @@ def main():
 
     # apply system arguments if exist
     argv = sys.argv[1:]
-    main_conf_path="/user/HS502/yl02706/MetaphorFrame/"
-    # main_conf_path="./"
+    # main_conf_path="/user/HS502/yl02706/MetaphorFrame/"
+    main_conf_path="./"
     config = Config(main_conf_path=main_conf_path)
     print(argv)
     if len(argv) > 0:
@@ -111,6 +111,9 @@ def main():
 
     # build tokenizer and model
     tokenizer = AutoTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
+    if args.multitask:
+        frame_tokenizer = AutoTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case, add_prefix_space=True)
+
     model = load_pretrained_model(args)
 
     ########### Training ###########
@@ -120,7 +123,7 @@ def main():
             args, logger, processor, task_name, label_list, tokenizer, output_mode
         )
         if args.multitask:
-            frame_dls = load_frame_data(tokenizer, args)
+            frame_dls = load_frame_data(frame_tokenizer, args)
         model, best_result = run_train(
             args,
             logger,
