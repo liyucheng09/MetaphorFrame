@@ -12,6 +12,7 @@ from run_classifier_dataset_utils import (
 )
 import datasets
 from lyc.data import get_hf_ds_scripts_path, get_tokenized_ds, processor, get_dataloader
+from transformers import DataCollatorForTokenClassification
 
 def tokenize_alingn_labels_replace_with_mask_and_add_type_ids(ds, tokenizer=None, do_mask=True):
     results={}
@@ -87,6 +88,8 @@ def combine_func(df):
     return result
 
 def load_frame_data(tokenizer, args, combine = False, melbert_data_size=None, data_dir = 'data/open_sesame_v1_data/fn1.7', do_mask=False):
+    data_collator = DataCollatorForTokenClassification(tokenizer, max_length=128)
+
     script = get_hf_ds_scripts_path('sesame')
     ds = datasets.load_dataset(script, data_dir=data_dir)
     if combine:
@@ -103,7 +106,13 @@ def load_frame_data(tokenizer, args, combine = False, melbert_data_size=None, da
     eval_ds = eval_ds.rename_column('frame_tags', 'labels')
     eval_ds = eval_ds.rename_column('is_target', 'token_type_ids')
 
-    train_dl, eval_dl = get_dataloader(train_ds, cols=['input_ids', 'token_type_ids', 'labels', 'attention_mask'], batch_size=args.train_batch_size if melbert_data_size is None else int((len(train_ds)/melbert_data_size)*args.train_batch_size)), get_dataloader(eval_ds, cols=['input_ids', 'token_type_ids', 'labels', 'attention_mask'], batch_size=args.eval_batch_size)
+    train_ds.set_format(columns=['input_ids', 'token_type_ids', 'labels', 'attention_mask'])
+    eval_ds.set_format(columns=['input_ids', 'token_type_ids', 'labels', 'attention_mask'])
+
+    train_dl = DataLoader(train_ds, args.train_batch_size if melbert_data_size is None else int((len(train_ds)/melbert_data_size)*args.train_batch_size), shuffle=True, collate_fn=data_collator)
+    eval_dl = None
+
+    # train_dl, eval_dl = get_dataloader(train_ds, cols=['input_ids', 'token_type_ids', 'labels', 'attention_mask'], batch_size=args.train_batch_size if melbert_data_size is None else int((len(train_ds)/melbert_data_size)*args.train_batch_size), collate_fn=data_collator), get_dataloader(eval_ds, cols=['input_ids', 'token_type_ids', 'labels', 'attention_mask'], batch_size=args.eval_batch_size)
     return train_dl, eval_dl
 
 def load_train_data(args, logger, processor, task_name, label_list, tokenizer, output_mode, k=None):
