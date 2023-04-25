@@ -1,21 +1,64 @@
-# main_config.cfg
+# FrameBERT: Conceptual Metaphor Detection with Frame Embedding Learning
 
-这三个修改一下即可，frame_model放concept 那个模型
+This repository contains the implementation of our EACL 2023 paper "FrameBERT: Conceptual Metaphor Detection with Frame Embedding Learning" (https://arxiv.org/abs/2302.04834). FrameBERT is a BERT-based model that leverages FrameNet embeddings for improved metaphor detection and model explainability. Our extensive experiments demonstrate the effectiveness of FrameBERT on four public benchmark datasets (VUA, MOH-X, TroFi) compared to the base model and state-of-the-art models.
+
+## Repository Structure
+
+The repository is organized as follows:
+
+- `scripts/`: Contains all bash scripts with relevant code execution and arguments for each script.
+    - `scripts/run.sh`: The main script for running FrameBERT.
+- `main_config.cfg`: Configuration file for `main.py`.
+- `data_all.zip`: Compressed file containing all the data needed for the project.
+- `frame_finder/`: Directory containing the frame embedding model.
+- `requirements.txt`: Lists the required packages for the project.
+
+## Getting Started
+
+1. Clone the repository:
+
 ```
-logging_dir= /vol/research/lyc_d/melbert/checkpoints/framebert
-
-data_dir = /user/HS502/yl02706/MetaphorFrame/data/VUA20
-
-frame_model = /vol/research/nlg/frame_finder/checkpoints/sent_no_mask_ff
+git clone https://github.com/liyucheng09/MetaphorFrame.git
+cd MetaphorFrame
 ```
 
-# main.py
+2. Install the required packages:
 
-第一行要确定一下项目当前地址
+```
+pip install -r requirements.txt
+```
 
-跑的时候加参数：
-`python main.py \
---model_type FrameMelbert \
---bert_model roberta-base \
---train_batch_size $(batch_size) \
---data_dir /user/HS502/yl02706/MetaphorFrame/data/VUA$(vua_version) `
+3. Unzip the data:
+
+```
+unzip data_all.zip
+```
+
+After unzipping, the frame data can be found at `data_all/open_sesame_v1_data`, and other data such as VUA, MOH, and TroFi datasets can be found in their respective directories.
+
+4. Run the main script:
+
+```
+./scripts/run.sh
+```
+
+## Configuration
+
+You can modify the configuration of the FrameBERT model by editing the `main_config.cfg` file. This file contains various settings and hyperparameters for the model.
+
+## Citation
+
+If you find this repository helpful for your research, please cite our paper:
+
+```
+@misc{li2023framebert,
+      title={FrameBERT: Conceptual Metaphor Detection with Frame Embedding Learning}, 
+      author={Yucheng Li and Shun Wang and Chenghua Lin and Frank Guerin and Loïc Barrault},
+      year={2023},
+      eprint={2302.04834},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL}
+}
+```
+
+For any questions or issues, please feel free to open an issue on GitHub or contact the authors directly.
