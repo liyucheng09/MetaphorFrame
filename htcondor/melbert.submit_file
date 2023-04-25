@@ -10,16 +10,18 @@ JobBatchName = "MelBert"
 
 # --------------------------------------------
 
-batch_size = 32
+batch_size = 24
 spv_isolate = False
 small_mean = False
 vua_version = 18
-num_train_epoch = 3
+num_train_epoch = 5
 frame_mean = False
+spvmask = True
+spvmaskcls = False
 
 # Executable and its arguments
 executable    = $ENV(HOME)/.conda/envs/lyc/bin/python
-arguments     = $ENV(HOME)/MetaphorFrame/main.py --model_type MELBERT --bert_model roberta-base --train_batch_size $(batch_size) --spv_isolate $(spv_isolate) --data_dir /user/HS502/yl02706/MetaphorFrame/data/VUA$(vua_version) --small_mean $(small_mean) --num_train_epoch $(num_train_epoch) --frame_mean $(frame_mean)
+arguments     = $ENV(HOME)/MetaphorFrame/main.py --model_type MELBERT --bert_model roberta-base --train_batch_size $(batch_size) --spv_isolate $(spv_isolate) --data_dir /user/HS502/yl02706/MetaphorFrame/data/VUA$(vua_version) --small_mean $(small_mean) --num_train_epoch $(num_train_epoch) --frame_mean $(frame_mean) --spvmask $(spvmask) --spvmaskcls $(spvmaskcls)
 
 # ---------------------------------------------------
 # Universe (vanilla, docker)
@@ -28,13 +30,13 @@ docker_image     = nvidia/cuda:10.2-cudnn7-runtime-ubuntu16.04
 
 # -------------------------------------------------
 # Event, out and error logs
-log    = c$(cluster).p$(process).$(batch_size).vua$(vua_version).epoch$(num_train_epoch).spvi$(spv_isolate).log
-output = c$(cluster).p$(process).$(batch_size).vua$(vua_version).epoch$(num_train_epoch).spvi$(spv_isolate).out
-error  = c$(cluster).p$(process).$(batch_size).vua$(vua_version).epoch$(num_train_epoch).spvi$(spv_isolate).error
+log    = c$(cluster).p$(process).melbert.$(batch_size).vua$(vua_version).epoch$(num_train_epoch).spvi$(spv_isolate).spvmask$(spvmask).spvmaskcls$(spvmaskcls).log
+output = c$(cluster).p$(process).melbert.$(batch_size).vua$(vua_version).epoch$(num_train_epoch).spvi$(spv_isolate).spvmask$(spvmask).spvmaskcls$(spvmaskcls).out
+error  = c$(cluster).p$(process).melbert.$(batch_size).vua$(vua_version).epoch$(num_train_epoch).spvi$(spv_isolate).spvmask$(spvmask).spvmaskcls$(spvmaskcls).error
 
 # -----------------------------------
 # File Transfer, Input, Output
-should_transfer_files = YES
+should_transfer_files = NO
 
 # Make certain project spaces available in container
 # environment = "mount=$ENV(HOME)"
@@ -46,24 +48,31 @@ environment = "mount=/vol/research/nlg,/vol/research/lyc_d"
 # -------------------------------------
 # Requirements for the Job (Requirements are explained in further detail in example09.submit_file)
 # NOTE: HasStornext is not valid on orca.
-requirements = (CUDAGlobalMemoryMb > 8000) && (CUDAGlobalMemoryMb <  25000) && \
+requirements = (CUDAGlobalMemoryMb > 15000) && (CUDAGlobalMemoryMb <  25000) && \
 #              (HasStornext) && \
-			   (CUDACapability > 2.0) && (CUDACapability < 8.0)
+			   (CUDACapability > 2.0)
 
 # --------------------------------------
 # Resources
 request_GPUs     = 1
 # this needs to be specified for the AI@Surrey cluster if requesting a GPU
-+GPUMem          = 10000
++GPUMem          = 15000
 request_CPUs     = 1
 request_memory   = 8G
 
 #This job will complete in less than 1 hour
-+JobRunTime = 12
++JobRunTime = 10
 
 #This job can checkpoint
 +CanCheckpoint = true
 
 # -----------------------------------
 # Queue commands
-queue
+queue 1
+
+#spvmaskcls = True
+#spvmask = False
+
+#num_train_epoch = 5
+
+#queue 1

@@ -6,3 +6,6 @@ data/
 *.out
 *.log
 *.error
+
+data_all/
+data_sample/
