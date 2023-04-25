@@ -589,6 +589,136 @@ class FrameMelBert(nn.Module):
             return loss
         return logits
 
+class MultiTaskMelbert(FrameMelBert):
+
+    def forward(
+        self,
+        input_ids,
+        input_ids_2,
+        target_mask,
+        target_mask_2,
+        attention_mask_2,
+
+        frame_input_ids=None,
+        frame_attention_mask=None,
+        frame_token_type = None,
+        frame_labels = None,
+
+        token_type_ids=None,
+        attention_mask=None,
+        labels=None,
+        head_mask=None,
+        input_with_mask_ids=None,
+    ):
+        """
+            Inputs:
+                `input_ids`: [batch_size, sequence_length] with the first input token indices in the vocabulary
+                `input_ids_2`:  [batch_size, sequence_length] with the second input token indicies
+
+                --> mark target index
+                `target_mask`:   [batch_size, sequence_length] with the mask for target word in the first input. 1 for target word and 0 otherwise.
+                `target_mask_2`:   [batch_size, sequence_length] with the mask for target word in the second input. 1 for target word and 0 otherwise.
+                `attention_mask_2`:   [batch_size, sequence_length] with indices selected in [0, 1] for the second input.
+
+                --> 0,1,2,3 四种输入; 1: target, 2: clause (local context), 3: pos info, 0: others
+                `token_type_ids`:   [batch_size, sequence_length] with the token types indices
+                    selected in [0, 1]. Type 0 corresponds to a `sentence A` and type 1 corresponds to a `sentence B` token (see BERT paper for more details).
+                `attention_mask`:   [batch_size, sequence_length] with indices selected in [0, 1] for the first input.
+                `labels`: optional labels for the classification output: torch.LongTensor of shape [batch_size, sequence_length]
+                    with indices selected in [0, ..., num_labels].
+                `head_mask`: an optional torch.Tensor of shape [num_heads] or [num_layers, num_heads] with indices between 0 and 1.
+                    It's a mask to be used to nullify some heads of the transformer. 1.0 => head is fully masked, 0.0 => head is not masked.
+            """
+
+        # First encoder for full sentence
+        outputs = self.encoder(
+            input_ids,
+            token_type_ids=token_type_ids,
+            attention_mask=attention_mask,
+            head_mask=head_mask,
+        )
+        frame_outputs = self.frame_encoder(
+            input_ids,
+            token_type_ids=target_mask.int(),
+            attention_mask=attention_mask,
+            head_mask=head_mask,
+        )
+
+        frame_logits = None
+        if frame_input_ids is not None:
+            frame_task_output = self.frame_encoder(frame_input_ids, 
+                token_type_ids = frame_token_type, attention_mask = frame_attention_mask, labels = frame_labels)
+            frame_loss = frame_task_output.loss
+
+        sequence_output = outputs[0]  # [batch, max_len, hidden]
+        frame_sequence_output = frame_outputs.last_hidden_state
+        pooled_output = outputs[1]  # [batch, hidden]
+
+        # Get target ouput with target mask
+        target_output = sequence_output * target_mask.unsqueeze(2)
+
+        # dropout
+        target_output = self.dropout(target_output)
+        pooled_output = self.dropout(pooled_output)
+        frame_sequence_output = self.dropout(frame_sequence_output)
+
+        if self.args.frame_mean:
+            # frame_cls = (frame_sequence_output * attention_mask.unsqueeze(2)).mean(1)
+            frame_cls = (frame_sequence_output * attention_mask.unsqueeze(2)).sum(dim=1)/attention_mask.sum(-1, keepdim=True)
+        else:
+            frame_cls = frame_sequence_output[:, 0]
+        if self.args.small_mean:
+            target_output = target_output.mean(1)  # [batch, hidden]
+        else:
+            target_output = target_output.sum(dim=1)/target_mask.sum(-1, keepdim=True)
+        # target_output = target_output.mean(1)  # [batch, hidden]
+        _, target_index_y = target_mask.max(dim=-1)
+        target_index_x = torch.arange(target_index_y.size(0), device=target_mask.device)
+        target_frame_embedding = frame_sequence_output[target_index_x, target_index_y]
+
+        # Second encoder for only the target word
+        outputs_2 = self.encoder(input_ids_2, attention_mask=attention_mask_2, head_mask=head_mask)
+        frame_outputs_2 = self.frame_encoder(input_ids_2, token_type_ids=target_mask_2.int(), attention_mask=attention_mask_2, head_mask=head_mask)
+
+        sequence_output_2 = outputs_2[0]  # [batch, max_len, hidden]
+        frame_sequence_output_2 = frame_outputs_2.last_hidden_state
+
+        _, target_index_y_2 = target_mask_2.max(dim=-1)
+        target_index_x_2 = torch.arange(target_index_y_2.size(0), device=target_mask_2.device)
+        isolated_target_frame_embedding = frame_sequence_output_2[target_index_x_2, target_index_y_2]
+
+        # Get target ouput with target mask
+        target_output_2 = sequence_output_2 * target_mask_2.unsqueeze(2)
+        target_output_2 = self.dropout(target_output_2)
+        if self.args.small_mean:
+            target_output_2 = target_output_2.mean(1)  # [batch, hidden]
+        else:
+            target_output_2 = target_output_2.sum(dim=1)/target_mask_2.sum(-1, keepdim=True)
+        # target_output_2 = target_output_2.mean(1)
+        isolated_target_frame_embedding = self.dropout(isolated_target_frame_embedding)
+
+        # Get hidden vectors each from SPV and MIP linear layers
+        if self.args.shuffle_concepts_in_batch:
+            batch_size = input_ids.shape[0]
+            frame_cls = frame_cls[torch.randperm(batch_size)]
+            isolated_target_frame_embedding = isolated_target_frame_embedding[torch.randperm(batch_size)]
+            target_frame_embedding = target_frame_embedding[torch.randperm(batch_size)]
+        if self.args.spv_isolate:
+            SPV_hidden = self.SPV_linear(torch.cat([pooled_output, target_output_2, frame_cls, isolated_target_frame_embedding], dim=1))
+        else:
+            SPV_hidden = self.SPV_linear(torch.cat([pooled_output, target_output, frame_cls, target_frame_embedding], dim=1))
+        MIP_hidden = self.MIP_linear(torch.cat([target_output_2, target_output, target_frame_embedding, isolated_target_frame_embedding], dim=1))
+
+        logits = self.classifier(self.dropout(torch.cat([SPV_hidden, MIP_hidden], dim=1)))
+        logits = self.logsoftmax(logits)
+
+        if labels is not None:
+            loss_fct = nn.NLLLoss()
+            loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+            return loss
+        return logits, frame_loss
+
+
 class FrameLogitsMelBert(nn.Module):
     """MelBERT"""
 
