@@ -36,7 +36,15 @@ unzip data_all.zip
 
 After unzipping, the frame data can be found at `data_all/open_sesame_v1_data`, and other data such as VUA, MOH, and TroFi datasets can be found in their respective directories.
 
-4. Run the main script:
+4. Prepare the `frame_finder` model first before we run the entire framewrok. Traning the frame model will take around 2 hours.
+
+```
+./scripts/ff.sh
+```
+
+5. config data path and `frame_finder` path in `main_config.cfg`
+
+6. Run the main script, training on `VUA18` will take about 5 hours:
 
 ```
 ./scripts/run.sh
