@@ -1,0 +1,8 @@
+__pycache__/*
+*.ipynb
+.ipynb_checkpoints/*
+*.py.lock
+
+.DS_Store
+.vscode
+*.pyc
