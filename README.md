@@ -2,6 +2,8 @@
 
 This repository contains the implementation of our EACL 2023 paper "FrameBERT: Conceptual Metaphor Detection with Frame Embedding Learning" (https://arxiv.org/abs/2302.04834). FrameBERT is a BERT-based model that leverages FrameNet embeddings for improved metaphor detection and model explainability. Our extensive experiments demonstrate the effectiveness of FrameBERT on four public benchmark datasets (VUA, MOH-X, TroFi) compared to the base model and state-of-the-art models.
 
+**Important updates**: I am going to add a `inference.py` to enable quick metaphor detection on your customized data. I plan to finish the update at the end of this June! So please star our project to get posted.
+
 ## Repository Structure
 
 The repository is organized as follows:
