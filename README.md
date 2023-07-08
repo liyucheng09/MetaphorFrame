@@ -29,6 +29,19 @@ cd MetaphorFrame
 ```
 pip install -r requirements.txt
 ```
+---
+
+3. If you just want to **run FrameBERT directly on your own data**, just run:
+
+```
+python inference.py CreativeLang/metaphor_detection_roberta_seq
+```
+
+Open and edit `inference.py` to see how to use your own data.
+
+---
+
+But if you want to **reproduce FrameBERT from scratch**, you need:
 
 3. Unzip the data:
 

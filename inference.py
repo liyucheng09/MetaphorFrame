@@ -5,7 +5,6 @@ import os
 import datasets
 import torch
 import numpy as np
-# from lyc.eval import write_predict_to_file
 from itertools import groupby
 
 def get_true_label(predictions, pad_mask = None, labels = None, input_ids = None, ignore_index=-100):
