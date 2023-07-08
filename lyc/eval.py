@@ -111,7 +111,7 @@ def show_error_instances_id(preds, labels, output_file, *args):
     print('Done!')
     out_file.close()
 
-def get_true_label_and_token(predictions, labels, ignore_index=-100, tokens = None, tokenizer = None):
+def get_true_label(predictions, pad_mask = None, labels = None, input_ids = None, ignore_index=-100):
     """去掉padding/BPE造成的填充label
 
     Args:
@@ -119,34 +119,53 @@ def get_true_label_and_token(predictions, labels, ignore_index=-100, tokens = No
         labels ([type]): 同pred的shape
         ignore_index: 要忽略的label id
     """
+    if pad_mask is None:
+        if labels is None:
+            raise ValueError('pad_mask and labels cannot be both None')
+        else:
+            pad_mask = labels
     if len(predictions.shape)==2:
         print('&&& Assuming tagging predictions:')
         true_predictions = [
-            [p for (p, l) in zip(prediction, label) if l != ignore_index]
-            for prediction, label in zip(predictions, labels)
+            [p for (p, l) in zip(prediction, pad) if l != ignore_index]
+            for prediction, pad in zip(predictions, pad_mask)
         ]
-        true_labels = [
-            [l for (p, l) in zip(prediction, label) if l != ignore_index]
-            for prediction, label in zip(predictions, labels)
-        ]
-        if tokens is not None:
-            assert tokenizer is not None
-            true_tokens = [
-                [tokenizer.convert_ids_to_tokens(t) for (t, l) in zip(token, label) if l != ignore_index]
-                for token, label in zip(tokens, labels)
+        if labels is not None:
+            true_labels = [
+                [l for (p, l, d) in zip(prediction, label, pad) if d != ignore_index]
+                for prediction, label, pad in zip(predictions, labels, pad_mask)
+            ]
+        if input_ids is not None:
+            true_input_ids = [
+                [i for (i, d) in zip(input_id, pad) if d != ignore_index]
+                for input_id, pad in zip(input_ids, pad_mask)
             ]
     elif len(predictions.shape)==1:
-        true_predictions = [p for p,l in zip(predictions, labels) if l !=ignore_index]
-        true_labels = [l for p,l in zip(predictions, labels) if l !=ignore_index]
+        true_predictions = [p for p,d in zip(predictions, pad_mask) if d !=ignore_index]
+        if labels is not None:
+            true_labels = [l for p,l,d in zip(predictions, labels, pad_mask) if d !=ignore_index]
     else:
         raise ValueError('Do not support non 2-d, 1-d inputs')
     
-    outputs = (true_predictions, true_labels,)
-    if tokens is not None:
-        outputs += (true_tokens,)
-    return outputs
+    output = (true_predictions,)
+    if labels is not None:
+        output += (true_labels,)
+    if input_ids is not None:
+        output += (true_input_ids,)
+    return output
 
-def write_predict_to_file(pred_out, tokens=None, out_file='predictions.csv', label_list=None, tokenizer = None):
+def reconstruct_words_from_ids(encoding):
+    """从encoding中重构出原始的words，主要是针对BPE的情况，因为BPE会把一个word分成多个token，这里把它们合并起来。
+    """
+    words = []
+    for i in encoding.word_ids():
+        if i is None:
+            continue
+        elif i == prev_i:
+            words[-1] += encoding.tokens[i]
+
+
+def write_predict_to_file(pred_out, pad_mask = None, tokens=None, out_file='predictions.csv', label_list=None):
     """将model的预测结果写入到文件中。目前支持2-D输入(tagging问题)和1-D输入(分类问题)。
     默认将去除label==-100的部分，因为大多数时候是padding/BPE带来的冗余部分。
 
@@ -158,27 +177,46 @@ def write_predict_to_file(pred_out, tokens=None, out_file='predictions.csv', lab
     """
     predictions = pred_out.predictions
     labels = pred_out.label_ids
+    if labels is None:
+        if pad_mask is None:
+            raise ValueError('pad_mask and label_list cannot be both None')
 
     predictions = np.argmax(predictions, axis=-1)
+    if labels is not None:
+        true_predictions, true_labels, = get_true_label(predictions, labels = labels,)
+    else:
+        true_predictions, = get_true_label(predictions, pad_mask = pad_mask)
 
-    if len(labels.shape) == 2:
-        outputs = get_true_label_and_token(predictions, labels, tokens = tokens, tokenizer = tokenizer)
-        with open(out_file, 'w', encoding='utf-8') as f:
-            for cols in zip(*outputs):
-                for items in zip(*cols):
-                    items = [str(i) for i in items]
-                    f.write( "\t".join(items) + '\n')
-                f.write('\n')
-        print(f'Save to conll file {out_file}.')
-        return
-    elif len(labels.shape) == 1:
-        result = {'prediction': predictions, 'labels': labels}
-        if tokens is not None:
-            result['tokens'] = tokens
-        df = pd.DataFrame(result)
-        df.to_csv(out_file, index=False, sep='\t')
-        print(f'Save to csv file {out_file}.')
-        return
+    if labels is None:
+        if len(predictions.shape) == 2:
+            with open(out_file, 'w', encoding='utf-8') as f:
+                for p,token in zip(true_predictions, tokens):
+                    for i,k in zip(p,token):
+                        f.write(f'{k}\t{i}\n')
+                    f.write('\n')
+            print(f'Save to conll file {out_file}.')
+            return
+        elif len(predictions.shape) == 1:
+            result = {'prediction': predictions, 'tokens': tokens}
+            df = pd.DataFrame(result)
+            df.to_csv(out_file, index=False)
+            print(f'Save to csv file {out_file}.')
+            return
+    else:
+        if len(labels.shape) == 2:
+            with open(out_file, 'w', encoding='utf-8') as f:
+                for p,l,token in zip(true_predictions, true_labels, tokens):
+                    for i,j,k in zip(p,l,token):
+                        f.write(f'{k}\t{j}\t{i}\n')
+                    f.write('\n')
+            print(f'Save to conll file {out_file}.')
+            return
+        elif len(labels.shape) == 1:
+            result = {'prediction': predictions, 'labels': labels, 'tokens': tokens}
+            df = pd.DataFrame(result)
+            df.to_csv(out_file, index=False)
+            print(f'Save to csv file {out_file}.')
+            return
 
 def eval_with_weights(pred_out, weights):
     predictions = pred_out.predictions
