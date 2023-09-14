@@ -6,6 +6,9 @@ import datasets
 import torch
 import numpy as np
 from itertools import groupby
+from nltk.tokenize import word_tokenize
+
+frame_list = ['_', 'Event_instance', 'Luck', 'Medical_professionals', 'Process_stop', 'Agriculture', 'Sleep', 'Request', 'Come_down_with', 'Manufacturing', 'Ingredients', 'Processing_materials', 'Intoxicants', 'Scope', 'Sociability', 'Prison', 'Trust', 'Intercepting', 'Take_place_of', 'Bungling', 'Leadership', 'Presence', 'People_by_morality', 'Activity_prepare', 'Political_locales', 'Cause_harm', 'Expressing_publicly', 'Communication_noise', 'Origin', 'Opportunity', 'Objective_influence', 'Amassing', 'Margin_of_resolution', 'Cause_to_wake', 'Economy', 'Capacity', 'Becoming', 'Forgiveness', 'Be_in_agreement_on_action', 'Amounting_to', 'Departing', 'Defending', 'Deserving', 'Detaining', 'Communication_manner', 'Medical_specialties', 'Evidence', 'People_along_political_spectrum', 'Relational_quantity', 'Transition_to_a_quality', 'Adopt_selection', 'Reparation', 'Amalgamation', 'Inhibit_movement', 'Electricity', 'Topic', 'Relative_time', 'Sending', 'Activity_pause', 'Military', 'Expectation', 'Extradition', 'Aging', 'Examination', 'Have_associated', 'Ingest_substance', 'Preventing_or_letting', 'Extreme_value', 'Achieving_first', 'Usefulness', 'Education_teaching', 'Becoming_silent', 'Finish_competition', 'Accomplishment', 'Cause_to_make_noise', 'Fall_asleep', 'Food', 'Sign', 'Telling', 'Used_up', 'Undergoing', 'Colonization', 'Obscurity', 'Apply_heat', 'Being_in_captivity', 'Eclipse', 'Killing', 'Judgment_direct_address', 'Bail_decision', 'Manner', 'Predicament', 'Delivery', 'Distributed_position', 'Robbery', 'Motion', 'Turning_out', 'Location_in_time', 'Becoming_dry', 'Cause_to_perceive', 'Expected_location_of_person', 'Process_end', 'Dominate_competitor', 'Change_of_phase', 'Being_in_control', 'Halt', 'Left_to_do', 'Project', 'Cause_impact', 'Individual_history', 'Position_on_a_scale', 'Needing', 'Destroying', 'Possession', 'Connecting_architecture', 'Thriving', 'Gathering_up', 'Piracy', 'Shapes', 'Rescuing', 'Perception_active', 'Stage_of_progress', 'Withdraw_from_participation', 'Accompaniment', 'Improvement_or_decline', 'Punctual_perception', 'Becoming_aware', 'Rewards_and_punishments', 'Using', 'Text', 'Being_in_effect', 'Law', 'Kinship', 'Change_event_duration', 'Popularity', 'Infrastructure', 'Arrest', 'Part_whole', 'Regard', 'Sound_level', 'Delimitation_of_diversity', 'Being_at_risk', 'Change_post-state', 'Practice', 'Endangering', 'Earnings_and_losses', 'Body_parts', 'Cogitation', 'Contrition', 'Relation', 'Taking_time', 'Ineffability', 'Process_start', 'Similarity', 'Means', 'Temporal_subregion', 'Range', 'System_complexity', 'Reveal_secret', 'Daring', 'Part_ordered_segments', 'Likelihood', 'Committing_crime', 'Exemplar', 'Memory', 'Fullness', 'Dominate_situation', 'Duration_relation', 'Making_arrangements', 'Scarcity', 'Deciding', 'Being_in_operation', 'Catching_fire', 'Competition', 'Coming_to_be', 'Boundary', 'Typicality', 'Activity_stop', 'Wealthiness', 'Intentionally_create', 'Serving_in_capacity', 'Subjective_influence', 'Being_wet', 'Buildings', 'Commerce_sell', 'Interior_profile_relation', 'Being_dry', 'Besieging', 'Indigenous_origin', 'Progression', 'State_of_entity', 'Architectural_part', 'Intentional_traversing', 'Being_necessary', 'Change_of_leadership', 'Ammunition', 'Suitability', 'Change_operational_state', 'Abounding_with', 'Information', 'Body_movement', 'Inclination', 'Part_piece', 'Supply', 'Point_of_dispute', 'Ride_vehicle', 'Instance', 'Quitting_a_place', 'Invading', 'Candidness', 'Making_faces', 'Encoding', 'Sent_items', 'Religious_belief', 'Fastener', 'Taking_sides', 'Fairness_evaluation', 'Assessing', 'Scouring', 'Sign_agreement', 'Soaking_up', 'Create_physical_artwork', 'Social_event', 'Hearsay', 'Adjusting', 'Enforcing', 'Tolerating', 'Offshoot', 'Social_interaction_evaluation', 'Run_risk', 'People', 'Create_representation', 'Operational_testing', 'Sounds', 'Biological_area', 'Heralding', 'Labor_product', 'Cause_change_of_position_on_a_scale', 'Judgment', 'Undergo_change', 'Cause_to_make_progress', 'Being_employed', 'Speak_on_topic', 'Bearing_arms', 'Documents', 'Catastrophe', 'Categorization', 'Disembarking', 'Evaluative_comparison', 'Medical_conditions', 'Judicial_body', 'Ranked_expectation', 'Success_or_failure', 'Cause_to_amalgamate', 'Rite', 'Hit_or_miss', 'Social_connection', 'Alliance', 'Measure_linear_extent', 'Ground_up', 'Certainty', 'Transfer', 'Hiring', 'Clothing', 'Cause_motion', 'Being_attached', 'Out_of_existence', 'Reliance', 'Capability', 'Memorization', 'Storing', 'Offenses', 'Misdeed', 'Communication_response', 'First_experience', 'Fear', 'Just_found_out', 'Foreign_or_domestic_country', 'Scrutiny', 'Respond_to_proposal', 'Mass_motion', 'Going_back_on_a_commitment', 'Rate_description', 'Breathing', 'Desiring', 'Using_resource', 'Intentionally_act', 'Cure', 'Having_or_lacking_access', 'Render_nonfunctional', 'Representative', 'Commerce_pay', 'Notification_of_charges', 'Prominence', 'Closure', 'Preference', 'Imprisonment', 'Desirable_event', 'Ratification', 'Getting_vehicle_underway', 'Beyond_compare', 'History', 'Attention', 'Translating', 'Disgraceful_situation', 'Noise_makers', 'Addiction', 'Attending', 'Seeking_to_achieve', 'Measurable_attributes', 'Attaching', 'Gizmo', 'Partiality', 'Adjacency', 'Meet_with', 'Cause_fluidic_motion', 'Institutionalization', 'Motion_noise', 'Make_noise', 'Perception_experience', 'Temperature', 'Criminal_investigation', 'Completeness', 'Waiting', 'Discussion', 'Reassuring', 'Be_in_agreement_on_assessment', 'Vocalizations', 'Undergo_transformation', 'Quantity', 'Quantified_mass', 'Forgoing', 'Obviousness', 'Measure_area', 'Referring_by_name', 'Performing_arts', 'Directional_locative_relation', 'Cutting', 'Physical_artworks', 'Accoutrements', 'Complaining', 'Grinding', 'Being_active', 'Estimating', 'Reason', 'Shoot_projectiles', 'Fleeing', 'Cause_expansion', 'Arraignment', 'Abandonment', 'Statement', 'Verdict', 'Text_creation', 'Placing', 'Biological_urge', 'Beat_opponent', 'Activity_start', 'Filling', 'Stimulus_focus', 'Have_as_requirement', 'Make_acquaintance', 'Putting_out_fire', 'Purpose', 'Mental_stimulus_stimulus_focus', 'Offering', 'Agree_or_refuse_to_act', 'Remembering_experience', 'Giving_in', 'Measure_mass', 'Sidereal_appearance', 'Linguistic_meaning', 'Eventive_affecting', 'Process_completed_state', 'Emotions_by_stimulus', 'Prohibiting_or_licensing', 'Measure_duration', 'Experience_bodily_harm', 'Natural_features', 'Emergency_fire', 'Frequency', 'Response', 'Frugality', 'Non-gradable_proximity', 'Estimated_value', 'Animals', 'Front_for', 'Kidnapping', 'Mental_stimulus_exp_focus', 'Measure_volume', 'Work', 'Adducing', 'Exchange', 'Manipulate_into_doing', 'Giving_birth', 'Locale_by_event', 'Evoking', 'Body_mark', 'Shopping', 'Moving_in_place', 'Version_sequence', 'Communicate_categorization', 'Imposing_obligation', 'Proportion', 'Trying_out', 'Bringing', 'Growing_food', 'Mining', 'Participation', 'Path_shape', 'Distinctiveness', 'Rank', 'Board_vehicle', 'Interrupt_process', 'Color_qualities', 'Performers_and_roles', 'Expansion', 'Compliance', 'Execution', 'Successful_action', 'Rotting', 'Judgment_communication', 'Partitive', 'Excreting', 'Expertise', 'Existence', 'Exporting', 'Give_impression', 'Experiencer_obj', 'Activity_resume', 'Affirm_or_deny', 'Co-association', 'Emphasizing', 'Irregular_combatants', 'Legality', 'Money', 'Guilt_or_innocence', 'People_by_residence', 'Tasting', 'Extreme_point', 'Degree_of_processing', 'Cause_to_start', 'Wearing', 'Diversity', 'Historic_event', 'Public_services', 'Setting_fire', 'Cause_change', 'Actually_occurring_entity', 'Isolated_places', 'Member_of_military', 'Temporary_stay', 'Abusing', 'Dispersal', 'Giving', 'Dimension', 'Path_traveled', 'Direction', 'Stinginess', 'Strictness', 'Behind_the_scenes', 'Being_obligated', 'Make_agreement_on_action', 'Change_posture', 'Attack', 'Fields', 'Billing', 'Medium', 'Activity_finish', 'Research', 'Cause_bodily_experience', 'Change_tool', 'Vehicle', 'Emotion_directed', 'Process', 'Nuclear_process', 'Control', 'Level_of_force_resistance', 'Possibility', 'Arson', 'Avoiding', 'Roadways', 'Creating', 'Claim_ownership', 'Active_substance', 'Convey_importance', 'Supporting', 'Separating', 'Labeling', 'Sentencing', 'Attempt_means', 'Light_movement', 'Businesses', 'Cause_to_continue', 'Verification', 'Forging', 'Fluidic_motion', 'Team', 'Grasp', 'Being_relevant', 'Travel', 'Temporal_collocation', 'State_continue', 'Volubility', 'Cause_change_of_phase', 'Remembering_information', 'Opinion', 'Commerce_buy', 'Part_inner_outer', 'Launch_process', 'Destiny', 'Try_defendant', 'Execute_plan', 'Explaining_the_facts', 'People_by_origin', 'Age', 'Confronting_problem', 'Hostile_encounter', 'Assistance', 'Arranging', 'Mental_property', 'Abundance', 'Breaking_out_captive', 'Manner_of_life', 'Hit_target', 'Traversing', 'Employing', 'Emanating', 'Taking', 'Redirecting', 'People_by_vocation', 'People_by_religion', 'Body_description_holistic', 'Timespan', 'Revenge', 'Medical_intervention', 'Appointing', 'Hospitality', 'Commemorative', 'Terrorism', 'Surrendering_possession', 'Choosing', 'Entering_of_plea', 'Come_together', 'Concessive', 'System', 'Building', 'Awareness_status', 'Type', 'Motion_directional', 'Name_conferral', 'Sequence', 'Artificiality', 'Hunting', 'Degree', 'Transition_to_state', 'Prevent_or_allow_possession', 'Pattern', 'Aiming', 'Quitting', 'Retaining', 'Recording', 'Judgment_of_intensity', 'Craft', 'Cardinal_numbers', 'Membership', 'Simple_name', 'Terms_of_agreement', 'Damaging', 'Required_event', 'Source_of_getting', 'Reading_activity', 'Death', 'Secrecy_status', 'Biological_entity', 'Probability', 'Store', 'Institutions', 'Unattributed_information', 'Arriving', 'Size', 'Impression', 'Becoming_a_member', 'Self_motion', 'Cooking_creation', 'Willingness', 'Cause_to_fragment', 'Collaboration', 'Communication', 'Conduct', 'Locale_by_use', 'Cause_emotion', 'Fame', 'Ambient_temperature', 'Locative_relation', 'Gesture', 'Rest', 'Rape', 'Forming_relationships', 'Cause_to_resume', 'Locale_by_ownership', 'Weather', 'Inspecting', 'Installing', 'Attributed_information', 'Indicating', 'Unemployment_rate', 'First_rank', 'Activity_ongoing', 'Attempt_suasion', 'Being_questionable', 'Trial', 'Importing', 'Be_subset_of', 'Cause_to_end', 'Fire_burning', 'Compatibility', 'Activity_done_state', 'Proliferating_in_number', 'Removing', 'Accuracy', 'Emptying', 'Lively_place', 'Reading_perception', 'Part_orientational', 'Aggregate', 'Chatting', 'Spatial_co-location', 'Locale', 'Awareness', 'Commercial_transaction', 'Sole_instance', 'Familiarity', 'Occupy_rank', 'Process_resume', 'Suasion', 'Color', 'Thwarting', 'Organization', 'Coming_to_believe', 'Theft', 'Reference_text', 'Connectors', 'Hindering', 'Omen', 'Containers', 'Preliminaries', 'Sufficiency', 'Facial_expression', 'Morality_evaluation', 'Being_located', 'Justifying', 'Intentionally_affect', 'Deny_or_grant_permission', 'Visiting', 'Legal_rulings', 'Posture', 'Network', 'People_by_jurisdiction', 'Proper_reference', 'Substance', 'Surviving', 'Smuggling', 'Commitment', 'Weapon', 'Suspicion', 'Subversion', 'Sensation', 'Ceasing_to_be', 'Containing', 'Contacting', 'Conquering', 'Importance', 'Submitting_documents', 'Firing', 'Cause_change_of_strength', 'Correctness', 'Exchange_currency', 'Feeling', 'Temporal_pattern', 'Causation', 'Predicting', 'Protecting', 'Preserving', 'Relational_natural_features', 'Releasing', 'Reasoning', 'Residence', 'Replacing', 'Receiving', 'Reshaping', 'Expensiveness', 'Reporting', 'Subordinates_and_superiors', 'Operate_vehicle', 'Manipulation', 'Rebellion', 'Touring', 'Location_of_light', 'Being_operational', 'Remainder', 'Chemical-sense_description', 'Entity', 'Desirability', 'Commerce_scenario', 'Food_gathering', 'Holding_off_on', 'Within_distance', 'Resolve_problem', 'Questioning', 'Being_named', 'Risky_situation', 'Negation', 'Calendric_unit', 'Alternatives', 'Renting', 'Reliance_on_expectation', 'Increment', 'Simple_naming', 'Clothing_parts', 'Simultaneity', 'Rejuvenation', 'Precipitation', 'Renunciation', 'Prevarication', 'Attempt', 'Law_enforcement_agency', 'Ingestion', 'Level_of_force_exertion', 'Inclusion', 'Spatial_contact', 'Custom', 'Hiding_objects', 'People_by_age', 'Contingency', 'Coincidence', 'Impact', 'Quarreling', 'Aesthetics', 'Cognitive_connection', 'Getting', 'Being_incarcerated', 'Coming_up_with', 'Change_event_time', 'Setting_out', 'Openness', 'Assemble', 'Reading_aloud', 'Difficulty', 'Change_position_on_a_scale', 'Planned_trajectory', 'Becoming_separated', 'Cause_to_move_in_place', 'Continued_state_of_affairs', 'Experiencer_focus', 'Seeking', 'Emotions_of_mental_activity', 'Immobilization', 'Firefighting', 'Reforming_a_system', 'Identicality', 'Locating', 'Event', 'Attitude_description', 'Personal_relationship', 'Goal', 'Artifact', 'Emotion_active', 'Recovery', 'Duration_description', 'Speed_description', 'Relational_political_locales', 'Win_prize', 'Rate_quantification', 'Summarizing', 'Cause_to_experience', 'Activity_ready_state', 'Sharpness', 'Escaping', 'Waking_up', 'Toxic_substance', 'Dead_or_alive', 'Differentiation', 'Operating_a_system', 'Change_direction', 'Proportional_quantity', 'Domain', 'Time_vector', 'Ordinal_numbers', 'Trendiness', 'Idiosyncrasy', 'Building_subparts', 'Being_born', 'Being_in_category', 'Process_continue', 'Carry_goods', 'Duplication', 'Make_cognitive_connection', 'Cotheme']
 
 def get_true_label(predictions, pad_mask = None, labels = None, input_ids = None, ignore_index=-100):
     """去掉padding/BPE造成的填充label
@@ -50,85 +53,34 @@ def get_true_label(predictions, pad_mask = None, labels = None, input_ids = None
         output += (true_input_ids,)
     return output
 
-def reconstruct_words_from_ids(encoding):
-    """从encoding中重构出原始的words，主要是针对BPE的情况，因为BPE会把一个word分成多个token，这里把它们合并起来。
-    """
-    words = []
-    for i in encoding.word_ids():
-        if i is None:
-            continue
-        elif i == prev_i:
-            words[-1] += encoding.tokens[i]
-
-
-def write_predict_to_file(pred_out, pad_mask = None, tokens=None, out_file='predictions.csv', label_list=None):
-    """将model的预测结果写入到文件中。目前支持2-D输入(tagging问题)和1-D输入(分类问题)。
-    默认将去除label==-100的部分，因为大多数时候是padding/BPE带来的冗余部分。
-
-    Args:
-        pred_out ([type]): logits
-        tokens ([type]): golden label
-        out_file (str, optional): 输出地址. Defaults to 'predictions.csv'.
-        label_list ([type], optional): id2label的mapping，支持dict. Defaults to None.
-    """
-    predictions = pred_out.predictions
-    labels = pred_out.label_ids
-    if labels is None:
-        if pad_mask is None:
-            raise ValueError('pad_mask and label_list cannot be both None')
-
-    predictions = np.argmax(predictions, axis=-1)
-    if labels is not None:
-        true_predictions, true_labels, = get_true_label(predictions, labels = labels,)
-    else:
-        true_predictions, = get_true_label(predictions, pad_mask = pad_mask)
-
-    if labels is None:
-        if len(predictions.shape) == 2:
-            with open(out_file, 'w', encoding='utf-8') as f:
-                for p,token in zip(true_predictions, tokens):
-                    for i,k in zip(p,token):
-                        f.write(f'{k}\t{i}\n')
-                    f.write('\n')
-            print(f'Save to conll file {out_file}.')
-            return
-        elif len(predictions.shape) == 1:
-            result = {'prediction': predictions, 'tokens': tokens}
-            df = pd.DataFrame(result)
-            df.to_csv(out_file, index=False)
-            print(f'Save to csv file {out_file}.')
-            return
-    else:
-        if len(labels.shape) == 2:
-            with open(out_file, 'w', encoding='utf-8') as f:
-                for p,l,token in zip(true_predictions, true_labels, tokens):
-                    for i,j,k in zip(p,l,token):
-                        f.write(f'{k}\t{j}\t{i}\n')
-                    f.write('\n')
-            print(f'Save to conll file {out_file}.')
-            return
-        elif len(labels.shape) == 1:
-            result = {'prediction': predictions, 'labels': labels, 'tokens': tokens}
-            df = pd.DataFrame(result)
-            df.to_csv(out_file, index=False)
-            print(f'Save to csv file {out_file}.')
-            return
+def write_predict_to_file(tokens, metaphor_labels, frame_labels, out_file='predictions.csv',):
+        
+    with open(out_file, 'w', encoding='utf-8') as f:
+        f.write('Tokens\tMetaphor_label\tFrame_label\n')
+        for token, mls, fls in zip(tokens, metaphor_labels, frame_labels):
+            for index_, (t, m, f_) in enumerate(zip(token, mls, fls)):
+                line = f'{t}\t{m}\t{frame_list[f_]}'
+                f.write(line+'\n')
+            f.write('\n')
+    print(f'Save to conll file {out_file}.')
+    return
 
 if __name__ == '__main__':
 
-    model_path, = sys.argv[1:]
-    prediction_output_file = os.path.join(model_path, 'predictions.csv')
+    metaphor_model, frame_model, = sys.argv[1:]
+    prediction_output_file = 'predictions.csv'
 
-    model = RobertaForTokenClassification.from_pretrained(model_path, num_labels=2)
-    tokenizer = RobertaTokenizerFast.from_pretrained('roberta-base',)
+    metaphor_model = RobertaForTokenClassification.from_pretrained(metaphor_model, num_labels=2)
+    tokenizer = RobertaTokenizerFast.from_pretrained('roberta-base', add_prefix_space=True)
 
-    data_collator = DataCollatorForTokenClassification(tokenizer, max_length=128, )
+    data_collator = DataCollatorForTokenClassification(tokenizer, max_length=256, )
 
-    sents = ['I like you', 'I hate you']
+    sents = ['The clouds parted and hard gashes of sunlight swooped down to stain the earth with streaks of white and gold light so that the shadows of the running horses flowed like dark streams over the dazzling snow .']
+    sents = [word_tokenize(sent) for sent in sents]
     ds = datasets.Dataset.from_dict({'tokens': sents})
 
     def tokenize(x):
-        out = tokenizer(x['tokens'], truncation=True, padding='max_length')
+        out = tokenizer(x['tokens'], truncation=True, padding='max_length', is_split_into_words=True)
         words_ids = out.word_ids()
         input_ids = out['input_ids']
 
@@ -142,21 +94,42 @@ if __name__ == '__main__':
                 pad_mask.append(-100)
             previous_word_idx = word_idx
         
-        grouped_ids = [list(group) for word_id, group in groupby(input_ids, lambda id: words_ids[input_ids.index(id)]) if word_id is not None]
-        words = [''.join(tokenizer.convert_ids_to_tokens(group)).replace('##', '') for group in grouped_ids]
-        words = [token.replace('Ġ', '') for token in words]
+        # grouped_ids = [list(group) for word_id, group in groupby(input_ids, lambda id: words_ids[input_ids.index(id)]) if word_id is not None]
+        # words = [''.join(tokenizer.convert_ids_to_tokens(group)).replace('##', '') for group in grouped_ids]
+        # words = [token.replace('Ġ', '') for token in words]
         
         out['pad_mask'] = pad_mask
-        out['words'] = words
+        # out['words'] = words
         return out
 
     ds = ds.map(tokenize)
 
     trainer = Trainer(
-        model=model,
+        model=metaphor_model,
         data_collator=data_collator,
         tokenizer=tokenizer,
     )
 
     pred_out = trainer.predict(ds)
-    write_predict_to_file(pred_out, ds['pad_mask'], ds['words'], out_file=prediction_output_file)
+    predictions = np.argmax(pred_out.predictions, axis=-1)
+    print(predictions[-1])
+    print(ds['pad_mask'][-1])
+    print(tokenizer.convert_ids_to_tokens(ds['input_ids'][-1]))
+    metaphor_predictions, = get_true_label(predictions, pad_mask=ds['pad_mask'])
+    print(metaphor_predictions[-1])
+
+    del metaphor_model
+    del trainer
+
+    frame_model = RobertaForTokenClassification.from_pretrained(frame_model)
+    trainer = Trainer(
+        model=frame_model,
+        data_collator=data_collator,
+        tokenizer=tokenizer,
+    )
+
+    pred_out = trainer.predict(ds)
+    predictions = np.argmax(pred_out.predictions, axis=-1)
+    frame_predictions, = get_true_label(predictions, pad_mask=ds['pad_mask'])
+
+    write_predict_to_file(ds['tokens'], metaphor_predictions, frame_predictions, out_file=prediction_output_file)
