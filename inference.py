@@ -112,9 +112,6 @@ if __name__ == '__main__':
 
     pred_out = trainer.predict(ds)
     predictions = np.argmax(pred_out.predictions, axis=-1)
-    print(predictions[-1])
-    print(ds['pad_mask'][-1])
-    print(tokenizer.convert_ids_to_tokens(ds['input_ids'][-1]))
     metaphor_predictions, = get_true_label(predictions, pad_mask=ds['pad_mask'])
     print(metaphor_predictions[-1])
 
