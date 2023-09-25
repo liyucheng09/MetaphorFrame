@@ -24,14 +24,37 @@ pip install -r requirements.txt
 3. If you just want to **run FrameBERT directly on your own data**, just run:
 
 ```
-python inference.py CreativeLang/metaphor_detection_roberta_seq liyucheng/frame_finder
+python inference.py example_articles.json
 ```
 
-Open and edit `inference.py` to see how to use your own data.
+Put your own data in `example_articles.json`. Check out `example_articles.json` and `inference.py`, you can easily edit them to run the program on large amount of articles.
 
-## 2. Reproduce FrameBERT from scratch (optional)
+This will produce the results to a `predictions.tsv`, which look like this:
+| Tokens         | Borderline_metaphor | Real_metaphors | Frame_label     |
+|----------------|---------------------|----------------|-----------------|
+| The            | 0                   | 0              | _               |
+| Frozen         | 1                   | 1              | _               |
+| Political      | 0                   | 0              | _               |
+| Battlefield    | 1                   | 1              | _               |
+| In             | 1                   | 0              | _               |
+| fact           | 0                   | 0              | _               |
+| ,              | 0                   | 0              | _               |
+| in             | 1                   | 0              | _               |
+| normal         | 0                   | 0              | Typicality      |
+| circumstances  | 0                   | 0              | _               |
+| ,              | 0                   | 0              | _               |
+| the            | 0                   | 0              | _               |
+| incumbent      | 0                   | 0              | _               |
+| would          | 0                   | 0              | _               |
+| look           | 1                   | 0              | Give_impression |
 
-But if you want to **reproduce FrameBERT from scratch**, you need:
+The column `Borderline_metaphor` indicates a wide range of metaphor which can be very conventional, but `Real_metaphor` represents more interesting and novel metaphors. The `Frame_label` represents the identified Frame labels.
+
+## Reproduce the paper
+
+You don't have to reproduce the results in the paper, if you just want to use a metaphor detection tool.
+
+But if you want to **reproduce FrameBERT from scratch** (optional):
 
 3. Unzip the data:
 
