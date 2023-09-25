@@ -50,11 +50,11 @@ This will produce the results to a `predictions.tsv`, which look like this:
 
 The column `Borderline_metaphor` indicates a wide range of metaphor which can be very conventional, but `Real_metaphor` represents more interesting and novel metaphors. The `Frame_label` represents the identified Frame labels.
 
-## Reproduce the paper
+## Reproduce the paper (optional)
 
 You don't have to reproduce the results in the paper, if you just want to use a metaphor detection tool.
 
-But if you want to **reproduce FrameBERT from scratch** (optional):
+But if you want to **reproduce FrameBERT from scratch**:
 
 3. Unzip the data:
 
