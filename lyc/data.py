@@ -6,7 +6,7 @@ from transformers import (BertModel,
                           BertTokenizer,
                           AutoModel,
                           AutoTokenizer)
-from datasets import load_dataset, concatenate_datasets, Dataset as hfds
+from datasets import load_dataset, concatenate_datasets, Dataset as hfds, DatasetDict
 import datasets
 from tqdm import tqdm
 import numpy as np
@@ -16,8 +16,8 @@ import pickle
 import pandas as pd
 
 def get_tokenized_ds(scripts, tokenizer, max_length=64,
-            slice=None, num_proc=None, shuffle=False, tokenize_func=None, 
-            cache_file_names=None, batched=True, tokenize_cols=['tokens'], 
+            slice=None, num_proc=None, shuffle=False, tokenize_func=None,
+            batched=True, tokenize_cols=['tokens'], 
             is_split_into_words=False, return_word_ids=None, tagging_cols={'labels':-100}, remove_cols=None,
             **kwargs):
     """
@@ -107,7 +107,7 @@ def get_tokenized_ds(scripts, tokenizer, max_length=64,
             if k not in tokenize_cols:
                 results[k]=v
                 continue
-            out_=tokenizer(v, is_split_into_words=True)
+            out_=tokenizer(v, is_split_into_words=True, max_length=max_length, padding='max_length', truncation=True)
             results.update(out_)
         labels={}
         for i, column in enumerate(tagging_cols.keys()):
@@ -161,7 +161,10 @@ def get_tokenized_ds(scripts, tokenizer, max_length=64,
                 cols_needed_removed.update(v)
             return cols_needed_removed
 
-    ds=load_dataset(scripts, **kwargs)
+    if isinstance(scripts, str):
+        ds=load_dataset(scripts, **kwargs)
+    elif isinstance(scripts, (hfds, DatasetDict)):
+        ds=scripts
 
     # if ds_name in ds.column_names.keys():
     #     ds=ds[ds_name]
@@ -185,7 +188,6 @@ def get_tokenized_ds(scripts, tokenizer, max_length=64,
             remove_columns=remove_cols,
             batched=batched,
             num_proc=num_proc,
-            cache_file_names=cache_file_names
         )
 
     if shuffle:

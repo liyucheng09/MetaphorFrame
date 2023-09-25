@@ -20,6 +20,7 @@ def tagging_eval_for_trainer(eval_prediction):
             - predictions
             - label_ids
     """
+    print('&&& Assuming tagging predictions:')
 
     predictions, labels = eval_prediction
     predictions = np.argmax(predictions, axis=-1)
