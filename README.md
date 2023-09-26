@@ -50,6 +50,23 @@ This will produce the results to a `predictions.tsv`, which look like this:
 
 The column `Borderline_metaphor` indicates a wide range of metaphor which can be very conventional, but `Real_metaphor` represents more interesting and novel metaphors. The `Frame_label` represents the identified Frame labels.
 
+## Citation
+
+If you find this repository helpful for your research, please cite our paper:
+
+```
+@misc{li2023framebert,
+      title={FrameBERT: Conceptual Metaphor Detection with Frame Embedding Learning}, 
+      author={Yucheng Li and Shun Wang and Chenghua Lin and Frank Guerin and Loïc Barrault},
+      year={2023},
+      eprint={2302.04834},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL}
+}
+```
+
+For any questions or issues, please feel free to open an issue on GitHub or contact the authors directly.
+
 ## Reproduce the paper (optional)
 
 You don't have to reproduce the results in the paper, if you just want to use a metaphor detection tool.
@@ -92,20 +109,3 @@ The repository is organized as follows:
 ## Configuration
 
 You can modify the configuration of the FrameBERT model by editing the `main_config.cfg` file. This file contains various settings and hyperparameters for the model.
-
-## Citation
-
-If you find this repository helpful for your research, please cite our paper:
-
-```
-@misc{li2023framebert,
-      title={FrameBERT: Conceptual Metaphor Detection with Frame Embedding Learning}, 
-      author={Yucheng Li and Shun Wang and Chenghua Lin and Frank Guerin and Loïc Barrault},
-      year={2023},
-      eprint={2302.04834},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL}
-}
-```
-
-For any questions or issues, please feel free to open an issue on GitHub or contact the authors directly.
