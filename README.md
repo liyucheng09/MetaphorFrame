@@ -95,6 +95,8 @@ After unzipping, the frame data can be found at `data_all/open_sesame_v1_data`, 
 ./scripts/run.sh
 ```
 
+To see the meaning of all variables, check the explaination in the config file `main_config.cfg`.
+
 ## Repository Structure
 
 The repository is organized as follows:
