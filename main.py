@@ -123,6 +123,7 @@ def main():
             args, logger, processor, task_name, label_list, tokenizer, output_mode
         )
         if args.multitask:
+            assert args.model_type == "FrameMelbert", "Multitask only works with FrameBERT"
             train_frame_dl, eval_frame_dl = load_frame_data(frame_tokenizer, args, melbert_data_size = len(train_dataloader.dataset))
         else:
             train_frame_dl, eval_frame_dl = None, None

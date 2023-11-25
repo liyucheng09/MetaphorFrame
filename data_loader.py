@@ -87,7 +87,7 @@ def combine_func(df):
 
     return result
 
-def load_frame_data(tokenizer, args, combine = False, melbert_data_size=None, data_dir = 'data/open_sesame_v1_data/fn1.7', do_mask=False):
+def load_frame_data(tokenizer, args, combine = False, melbert_data_size=None, data_dir = 'data_all/open_sesame_v1_data/fn1.7', do_mask=False):
     data_collator = DataCollatorForTokenClassification(tokenizer, max_length=128)
 
     script = get_hf_ds_scripts_path('sesame')
